@@ -100,6 +100,9 @@ public abstract class AbstractLDAPUserDetailsContextMapper implements
                 .setZip(getUserInfo(userInfo, "zip"))
                 .setCity(getUserInfo(userInfo, "city"))
                 .setCountry(getUserInfo(userInfo, "country"));
+        // these need type LDAPUser, so separate call for new cast
+        userDetails.setCn(getUserInfo(userInfo, "cn"))
+                   .setDn(getUserInfo(userInfo, "dn"));
 
         // Set privileges for the user. If not, privileges are handled
         // in local database
@@ -240,7 +243,7 @@ public abstract class AbstractLDAPUserDetailsContextMapper implements
         }
     }
 
-    private String getUserInfo(Map<String, ArrayList<String>> userInfo,
+    protected String getUserInfo(Map<String, ArrayList<String>> userInfo,
             String attributeName) {
         return getUserInfo(userInfo, attributeName, "");
     }
@@ -255,7 +258,7 @@ public abstract class AbstractLDAPUserDetailsContextMapper implements
      * @param defaultValue
      * @return
      */
-    private String getUserInfo(Map<String, ArrayList<String>> userInfo,
+    protected String getUserInfo(Map<String, ArrayList<String>> userInfo,
             String attributeName, String defaultValue) {
         String[] attributeMapping = mapping.get(attributeName);
         String value = "";

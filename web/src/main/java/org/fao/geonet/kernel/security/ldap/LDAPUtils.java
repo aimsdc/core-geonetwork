@@ -99,7 +99,10 @@ public class LDAPUtils {
 		}
 
 		// Add user groups
-		if (importPrivilegesFromLdap && !Profile.ADMINISTRATOR.equals(user.getProfile())) {
+		// mod
+		// if (importPrivilegesFromLdap && !Profile.ADMINISTRATOR.equals(user.getProfile())) {
+        // sometimes admin accounts are also in LDAP, when running ldap mode, only user not in LDAP is user admin
+        if (importPrivilegesFromLdap && !user.getUsername().equalsIgnoreCase("admin")) {
 			dbms.execute("DELETE FROM UserGroups WHERE userId=?", Integer.valueOf(id));
 			for(Map.Entry<String, String> privilege : user.getPrivileges().entries()) {
 				// Add group privileges for each groups

@@ -88,19 +88,34 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
 
                 // Extract profile first
                 Set<String> profileList = new HashSet<String>();
+                // will be the DN of the user as the value, so use CN if you have one.
+                String cn = getUserInfo(userInfo, "cn");
+                if (cn != null && cn.length() > 0) {
+                    Log.debug(Geonet.LDAP, "CN: \t" + cn);
+                } else {
+                    Log.debug(Geonet.LDAP, "No CN:");
+                }
                 String groupsQuery = MessageFormat.format(this.privilegeQuery,
-                        userDetails.getUsername());
+                        ((cn != null && cn.length() > 0) ? cn : userDetails.getUsername()));
+                Log.debug(Geonet.LDAP, "Set Variable in Profile query: \t" + groupsQuery);
                 ldapInfoList = dc.search(privilegeObject, groupsQuery, null);
                 while (ldapInfoList.hasMore()) {
                     SearchResult sr = (SearchResult) ldapInfoList.next();
                     String profileName = (String) sr.getAttributes()
                             .get(privilegeAttribute).get();
 
-                    Matcher m = privilegeQueryPatternCompiled
-                            .matcher(profileName);
-                    boolean b = m.matches();
+                    boolean b;
+                    String p;
+                    if (privilegeQueryPatternCompiled != null) {
+                        Matcher m = privilegeQueryPatternCompiled
+                                .matcher(profileName);
+                        b = m.matches();
+                        p = m.group(1);
+                    } else {
+                        b = true;
+                        p = profileName;
+                    }
                     if (b) {
-                        String p = m.group(1);
                         if (profileMapping != null) {
                             String mapped = profileMapping.get(p);
                             if (mapped != null) {
@@ -108,6 +123,7 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
                             }
                         }
                         profileList.add(p);
+                        Log.debug(Geonet.LDAP, "Can Map LDAP profile '" + p);
                     } else {
                         Log.error(Geonet.LDAP, "LDAP profile '" + profileName
                                 + "' does not match search pattern '"
@@ -116,7 +132,7 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
                     }
                 }
                 String highestUserProfile = profileManager
-                        .getHighestProfile(profileList.toArray(new String[0]));
+                        .getHighestProfile(profileList.toArray(new String[profileList.size()]));
                 if (highestUserProfile != null) {
                     if (Log.isDebugEnabled(Geonet.LDAP)) {
                         Log.debug(Geonet.LDAP, "  Highest user profile is "
@@ -138,20 +154,31 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
                 
                 
                 // Get groups
+                // will be the DN of the user as the value, so use CN if you have one.
                 String groupQuery = MessageFormat.format(this.groupQuery,
-                        userDetails.getUsername());
+                        ((cn != null && cn.length() > 0) ? cn : userDetails.getUsername()));
+                Log.debug(Geonet.LDAP, "LDAP search name -> groupObject: \t" + groupObject);
+                Log.debug(Geonet.LDAP, "LDAP search filter -> groupQuery: \t" + groupQuery);
                 ldapInfoList = dc.search(this.groupObject, groupQuery, null);
+                Log.debug(Geonet.LDAP, "LDAP search has results : \t" + ldapInfoList.hasMore());
                 while (ldapInfoList.hasMore()) {
                     SearchResult sr = (SearchResult) ldapInfoList.next();
                     String groupName = (String) sr.getAttributes()
                             .get(groupAttribute).get();
 
-                    Matcher m = groupQueryPatternCompiled.matcher(groupName);
-                    boolean b = m.matches();
+                    boolean b;
+                    String group;
+                    if (groupQueryPatternCompiled != null) {
+                        Matcher m = groupQueryPatternCompiled.matcher(groupName);
+                        b = m.matches();
+                        group = m.group(1);
+                    } else {
+                        b = true;
+                        group = groupName;
+                    }
                     if (b) {
-                        String group = m.group(1);
-                        userDetails.addPrivilege(group,
-                                userDetails.getProfile());
+                        Log.debug(Geonet.LDAP, "Adding privilege for group: \t" + group);
+                        userDetails.addPrivilege(group, userDetails.getProfile());
                     } else {
                         Log.error(Geonet.LDAP, "LDAP group '" + groupName
                                 + "' does not match search pattern '"
@@ -159,7 +186,7 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
                     }
                 }
             } catch (NamingException e) {
-                Log.error(Geonet.LDAP, "Failed to extract profiles and groups. Error is: " + e.getMessage());
+                Log.error(Geonet.LDAP, "Failed to extract profiles and groups. Exception: ", e);
                 e.printStackTrace();
             }
         }
@@ -179,7 +206,9 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
 
     public void setGroupQueryPattern(String groupQueryPattern) {
         this.groupQueryPattern = groupQueryPattern;
-        this.groupQueryPatternCompiled = Pattern.compile(groupQueryPattern);
+        if (this.groupQueryPattern != null && this.groupQueryPattern.length() > 0) {
+            this.groupQueryPatternCompiled = Pattern.compile(groupQueryPattern);
+        }
     }
 
     public String getPrivilegeQuery() {
@@ -196,8 +225,10 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
 
     public void setPrivilegeQueryPattern(String privilegeQueryPattern) {
         this.privilegeQueryPattern = privilegeQueryPattern;
-        this.privilegeQueryPatternCompiled = Pattern
-                .compile(privilegeQueryPattern);
+        if (this.privilegeQueryPattern != null && this.privilegeQueryPattern.length() > 0) {
+            this.privilegeQueryPatternCompiled = Pattern
+                    .compile(privilegeQueryPattern);
+        }
     }
 
     public String getGroupObject() {

@@ -179,8 +179,9 @@ public class ProfileManager
 		int numberOfProfilesExtended = 0;
 		
 		for (String p : profiles) {
+            if (highestProfile == null) highestProfile = p;
 			Set<String> currentProfileSet = getProfilesSet(p);
-			if (currentProfileSet.size() > numberOfProfilesExtended) {
+			if (currentProfileSet != null && currentProfileSet.size() > numberOfProfilesExtended) {
 				highestProfile = p;
 				numberOfProfilesExtended = currentProfileSet.size();
 			}

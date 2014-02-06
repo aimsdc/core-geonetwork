@@ -33,6 +33,8 @@ public class LDAPUser extends JeevesUser {
 	private static final long serialVersionUID = -5390558007347570517L;
 	
 	private Multimap<String, String> groupsAndProfile = HashMultimap.create();
+    private String cn;
+    private String dn;
 	
 	public LDAPUser(ProfileManager profileManager, String username) {
 		super(profileManager);
@@ -50,4 +52,24 @@ public class LDAPUser extends JeevesUser {
 	public Multimap<String, String> getPrivileges() {
 		return groupsAndProfile;
 	}
+
+    public String getCn() {
+        return cn;
+    }
+
+    public LDAPUser setCn(String cn) {
+        if (cn == null) cn = "";
+        this.cn = cn;
+        return this;
+    }
+
+    public String getDn() {
+        return dn;
+    }
+
+    public LDAPUser setDn(String dn) {
+        if (dn == null) dn = "";
+        this.dn = dn;
+        return this;
+    }
 }
