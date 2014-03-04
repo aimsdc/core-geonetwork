@@ -132,6 +132,8 @@
         <property name="privilegeObject" value="${ldap.privilege.search.privilege.object}"/>
         <property name="privilegeQuery" value="${ldap.privilege.search.privilege.query}"/>
         <property name="privilegeQueryPattern" value="${ldap.privilege.search.privilege.pattern}"/>
+        <property name="privilegeQueryPrefix" value="${ldap.privilege.search.privilege.prefix}"/>
+        <property name="privilegeQueryPostfix" value="${ldap.privilege.search.privilege.postfix}"/>
 
         <property name="contextSource" ref="contextSource"/>
     </bean>
@@ -149,6 +151,7 @@
                 <entry key="ldapUserSearchBase" value="${ldap.sync.user.search.base}"/>
                 <entry key="ldapUserSearchFilter" value="${ldap.sync.user.search.filter}"/>
                 <entry key="ldapUserSearchAttribute" value="${ldap.sync.user.search.attribute}"/>
+                <entry key="ldapCreateMissingAccounts" value="${ldap.sync.user.CreateMissingAccounts}"/>
 
                 <entry key="createNonExistingLdapGroup" value="${ldap.privilege.create.nonexisting.groups}"/>
                 <entry key="ldapGroupSearchBase" value="${ldap.sync.group.search.base}"/>
@@ -157,6 +160,12 @@
                 <entry key="ldapGroupDescAttribute" value="${ldap.sync.group.description.attribute}"/>
                 <entry key="ldapGroupSearchPattern" value="${ldap.sync.group.search.pattern}"/>
 
+				<entry key="privilegeAttribute" value="${ldap.privilege.search.privilege.attribute}"/>
+				<entry key="privilegeObject" value="${ldap.privilege.search.privilege.object}"/>
+				<entry key="privilegeQuery" value="${ldap.privilege.search.privilege.query}"/>
+				<entry key="privilegeQueryPattern" value="${ldap.privilege.search.privilege.pattern}"/>
+                <entry key="privilegeQueryPrefix" value="${ldap.privilege.search.privilege.prefix}"/>
+                <entry key="privilegeQueryPostfix" value="${ldap.privilege.search.privilege.postfix}"/>
             </map>
         </property>
     </bean>

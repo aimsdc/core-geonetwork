@@ -60,6 +60,8 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
     private String privilegeObject;
     private String privilegeQuery;
     private String privilegeQueryPattern;
+    private String privilegeQueryPrefix;
+    private String privilegeQueryPostfix;
 
     private Pattern groupQueryPatternCompiled;
 
@@ -121,6 +123,14 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
                             if (mapped != null) {
                                 p = mapped;
                             }
+                        }
+                        if (this.privilegeQueryPrefix != null && this.privilegeQueryPrefix.length() > 0 &&
+                                p.indexOf(this.privilegeQueryPrefix) != -1) {
+                            p = p.substring(p.indexOf(this.privilegeQueryPrefix) + this.privilegeQueryPrefix.length());
+                        }
+                        if (this.privilegeQueryPostfix != null && this.privilegeQueryPostfix.length() > 0 &&
+                                p.indexOf(this.privilegeQueryPostfix) != -1) {
+                            p = p.substring(0, p.indexOf(this.privilegeQueryPostfix));
                         }
                         profileList.add(p);
                         Log.debug(Geonet.LDAP, "Can Map LDAP profile '" + p);
@@ -229,6 +239,22 @@ public class LDAPUserDetailsContextMapperWithProfileSearch extends
             this.privilegeQueryPatternCompiled = Pattern
                     .compile(privilegeQueryPattern);
         }
+    }
+
+    public String getPrivilegeQueryPrefix() {
+        return privilegeQueryPrefix;
+    }
+
+    public void setPrivilegeQueryPrefix(String privilegeQueryPrefix) {
+        this.privilegeQueryPrefix = privilegeQueryPrefix;
+    }
+
+    public String getPrivilegeQueryPostfix() {
+        return privilegeQueryPostfix;
+    }
+
+    public void setPrivilegeQueryPostfix(String privilegeQueryPostfix) {
+        this.privilegeQueryPostfix = privilegeQueryPostfix;
     }
 
     public String getGroupObject() {

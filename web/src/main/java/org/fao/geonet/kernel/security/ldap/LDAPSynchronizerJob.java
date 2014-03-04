@@ -23,10 +23,8 @@
 package org.fao.geonet.kernel.security.ldap;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.MessageFormat;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,6 +57,8 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
 
     private DefaultSpringSecurityContextSource contextSource;
 
+    private JobDataMap jdm;
+
     @Override
     protected void executeInternal(JobExecutionContext jobExecContext)
             throws JobExecutionException {
@@ -80,7 +80,7 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
             }
 
             // Get LDAP information defining which users to sync
-            final JobDataMap jdm = jobExecContext.getJobDetail()
+            jdm = jobExecContext.getJobDetail()
                     .getJobDataMap();
             contextSource = (DefaultSpringSecurityContextSource) jdm
                     .get("contextSource");
@@ -90,10 +90,16 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
             String ldapUserSearchBase = (String) jdm.get("ldapUserSearchBase");
             String ldapUserSearchAttribute = (String) jdm
                     .get("ldapUserSearchAttribute");
+            boolean ldapCreateMissingAccounts = false;
+            try {
+                ldapCreateMissingAccounts = Boolean.parseBoolean((String) jdm.get("ldapCreateMissingAccounts"));
+            } catch (Exception e) {
+            }
             if (Log.isDebugEnabled(Geonet.LDAP)) {
                 Log.debug(Geonet.LDAP, "LDAPSynchronizerJob ldapUserSearchBase: " + ldapUserSearchBase);
                 Log.debug(Geonet.LDAP, "LDAPSynchronizerJob ldapUserSearchFilter: " + ldapUserSearchFilter);
                 Log.debug(Geonet.LDAP, "LDAPSynchronizerJob ldapUserSearchAttribute: " + ldapUserSearchAttribute);
+                Log.debug(Geonet.LDAP, "LDAPSynchronizerJob ldapCreateMissingAccounts: " + ldapCreateMissingAccounts);
             }
 
             DirContext dc = contextSource.getReadOnlyContext();
@@ -108,7 +114,7 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
 
                 // Users
                 synchronizeUser(ldapUserSearchFilter, ldapUserSearchBase,
-                        ldapUserSearchAttribute, dc, dbms);
+                        ldapUserSearchAttribute, dc, dbms, ldapCreateMissingAccounts);
 
                 // And optionaly groups
                 String createNonExistingLdapGroup = (String) jdm
@@ -192,7 +198,7 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
 
     private void synchronizeUser(String ldapUserSearchFilter,
                                  String ldapUserSearchBase, String ldapUserSearchAttribute,
-                                 DirContext dc, Dbms dbms) throws NamingException, SQLException {
+                                 DirContext dc, Dbms dbms, boolean ldapCreateMissingAccounts) throws NamingException, SQLException {
         // Do something for LDAP users ? Currently user is updated on log
         NamingEnumeration<?> userList = dc.search(ldapUserSearchBase,
                 ldapUserSearchFilter, null);
@@ -214,6 +220,34 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                         usernames.append("'");
                         usernames.append(attributeValue);
                         usernames.append("', ");
+                        if (ldapCreateMissingAccounts) {
+                            String cnAttibuteValue = ((sr.getAttributes().get("cn") != null) ? ((String) (sr.getAttributes().get("cn").get())) : "");
+                            String profile = null;
+                            if (cnAttibuteValue.length() > 0) {
+                                profile = this.getHighestProfile(attributeValue, cnAttibuteValue);
+                            }
+                            Log.debug(Geonet.LDAP, "synchronizeUser checking username: " + attributeValue);
+                            String query = "SELECT id FROM Users WHERE authtype=? AND username = '" + attributeValue + "'";
+                            if (Log.isDebugEnabled(Geonet.LDAP)) {
+                                Log.debug(Geonet.LDAP, "synchronizeUser single db Query: " + query.replaceAll("\\?", LDAPConstants.LDAP_FLAG));
+                            }
+                            Element e = dbms.select(query, LDAPConstants.LDAP_FLAG);
+                            if (e == null || e.getChildren("record") == null || e.getChildren("record").size() == 0) {
+                                if (Log.isDebugEnabled(Geonet.LDAP)) {
+                                    Log.debug(Geonet.LDAP, "  - Create LDAP user " + attributeValue + " in local database.");
+                                }
+                                // PasswordUtil.encode(context, password)
+                                String id = applicationContext.getBean(SerialFactory.class).getSerial(dbms, "Users") + "";
+                                String insert_query = "INSERT INTO Users (id, username, password, profile, authtype) " +
+                                        "VALUES (?, ?, ?, ?, ?)";
+                                dbms.execute(insert_query, Integer.valueOf(id), attributeValue, "LDAP_PASSWORD",
+                                        ((profile != null) ? profile : Geonet.Profile.REGISTERED_USER), LDAPConstants.LDAP_FLAG);
+                            } else {
+                                Element r = (Element) e.getChildren("record").get(0);
+                                int userId = Integer.valueOf(r.getChildText("id"));
+                                Log.debug(Geonet.LDAP, "Record with username:" + attributeValue + " has id:" + userId);
+                            }
+                        }
                         Log.debug(Geonet.LDAP, "synchronizeUser appending username: " + attributeValue);
                         ++appendedCnt;
                     } else {
@@ -337,7 +371,7 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                     Attribute attr = (Attribute) allAttr.next();
                     //Log.debug(Geonet.LDAP, " attribute ID: " + attr.getID());
                     if (attr.getID().equalsIgnoreCase("member")) {
-                        for (NamingEnumeration vals = attr.getAll(); vals.hasMoreElements();) {
+                        for (NamingEnumeration vals = attr.getAll(); vals.hasMoreElements(); ) {
                             String memberDN = (String) vals.next();
                             Log.debug(Geonet.LDAP, "synchronizeGroup memberDN: " + memberDN);
                             // Get this member's username to query Geo DB
@@ -352,7 +386,8 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                 Log.debug(Geonet.LDAP, "synchronizeUser search has results: " + userList.hasMore());
                             }
                             // Build a list of LDAP users
-                            Map<String, List<String>> usernames = new HashMap<String, List<String>>();
+                            Map<String, List<String>> userMemberOfMap = new HashMap<String, List<String>>();
+                            Map<String, String> userProfileMap = new HashMap<String, String>();
                             int appendedCnt = 0;
                             try {
                                 while (userList.hasMore()) {
@@ -362,13 +397,24 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                         if (sr2.getAttributes() != null && sr2.getAttributes().get(ldapUserSearchAttribute) != null) {
                                             Attribute attribute = sr2.getAttributes().get(ldapUserSearchAttribute);
                                             String attributeValue = (String) attribute.get();
-                                            usernames.put(attributeValue, null);
+                                            // get the profile attribute using the users CN
+                                            userMemberOfMap.put(attributeValue, null);
+                                            String cnAttributeValue = ((sr2.getAttributes().get("cn") != null) ? ((String) (sr2.getAttributes().get("cn").get())) : "");
+                                            String profile = null;
+                                            if (cnAttributeValue.length() > 0) {
+                                                profile = this.getHighestProfile(attributeValue, cnAttributeValue);
+                                                if (profile != null && profile.length() > 0) {
+                                                    userProfileMap.put(attributeValue, profile);
+                                                } else {
+                                                    userProfileMap.put(attributeValue, Geonet.Profile.REGISTERED_USER);
+                                                }
+                                            }
                                             Log.debug(Geonet.LDAP, "synchronizeGroup member with username: " + attributeValue);
                                             ++appendedCnt;
                                             // what is this user a member of
                                             if (sr2.getAttributes().get("memberOf") != null && sr2.getAttributes().get("memberOf").getAll() != null) {
                                                 List<String> memberOfDNList = new ArrayList<String>();
-                                                for (NamingEnumeration memberOfAttrVals = sr2.getAttributes().get("memberOf").getAll(); memberOfAttrVals.hasMoreElements();) {
+                                                for (NamingEnumeration memberOfAttrVals = sr2.getAttributes().get("memberOf").getAll(); memberOfAttrVals.hasMoreElements(); ) {
                                                     Object obj3 = memberOfAttrVals.next();
                                                     if (obj3 != null) {
                                                         String memberOfDN = (String) obj3;
@@ -379,7 +425,7 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                                     }
                                                 }
                                                 if (memberOfDNList.size() > 0)
-                                                    usernames.put(attributeValue, memberOfDNList);
+                                                    userMemberOfMap.put(attributeValue, memberOfDNList);
                                             }
                                         } else {
                                             Log.debug(Geonet.LDAP, "synchronizeGroup member ldap object does not contain required attribute: " + ldapUserSearchAttribute);
@@ -394,12 +440,12 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                         "Unexpected error while processing LDAP user list; appendedCnt:" + appendedCnt,
                                         slee);
                             }
-                            if (usernames.size() == 0) {
+                            if (userMemberOfMap.size() == 0) {
                                 Log.error(Geonet.LDAP, "No usernames found using search memberUserFilter: " + memberUserFilter);
-                            } else if (usernames.size() > 1) {
+                            } else if (userMemberOfMap.size() > 1) {
                                 Log.error(Geonet.LDAP, "Multiple usernames found using search memberUserFilter: " + memberUserFilter);
                             } else {
-                                String userName = usernames.keySet().iterator().next();
+                                String userName = userMemberOfMap.keySet().iterator().next();
                                 Element userIdRequest = dbms.select(
                                         "SELECT id FROM Users WHERE authtype=? AND username=?", LDAPConstants.LDAP_FLAG, userName);
                                 Element userRecord = userIdRequest.getChild("record");
@@ -430,26 +476,14 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                             }
                                         }
                                         if (!alreadyMember) {
-                                            ProfileManager profileManager = applicationContext
-                                                    .getBean(ProfileManager.class);
-                                            String highestUserProfile = profileManager
-                                                    .getHighestProfile(profiles.toArray(new String[profiles.size()]));
-                                            if (highestUserProfile != null) {
-                                                if (Log.isDebugEnabled(Geonet.LDAP)) {
-                                                    Log.debug(Geonet.LDAP, "  Highest user profile is "
-                                                            + highestUserProfile);
-                                                }
-                                            } else {
-                                                highestUserProfile = ((profiles != null && profiles.size() > 0) ? profiles.get(0) : Geonet.Profile.REGISTERED_USER);
-                                            }
                                             Log.error(Geonet.LDAP, "Creating UserGroups entry for user: " + userName
-                                                    + ", group:" + groupName + ", profile:" + highestUserProfile);
+                                                    + ", group:" + groupName + ", profile:" + userProfileMap.get(userName));
                                             String query = "INSERT INTO USERGROUPS(userId, groupId, profile) VALUES(?,?,?)";
-                                            dbms.execute(query, userId, groupIdInt, highestUserProfile);
+                                            dbms.execute(query, userId, groupIdInt, userProfileMap.get(userName));
                                         }
                                     }
                                     // check existing against existing ldap group membership
-                                    for (String memberOfDN : usernames.get(userName)) {
+                                    for (String memberOfDN : userMemberOfMap.get(userName)) {
                                         int startIndex = memberOfDN.toLowerCase().lastIndexOf("cn=") + 3;
                                         int endIndex = memberOfDN.substring(startIndex).toLowerCase().indexOf(",");
                                         String cn = memberOfDN.substring(startIndex).substring(0, endIndex);
@@ -469,22 +503,10 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                             Element cnInDbGroupRecord = cnInDbGroupRequest.getChild("record");
                                             if (cnInDbGroupRecord != null) {
                                                 Integer cnInDbGroupId = Integer.parseInt(cnInDbGroupRequest.getChild("record").getChildText("id"));
-                                                ProfileManager profileManager = applicationContext
-                                                        .getBean(ProfileManager.class);
-                                                String highestUserProfile = profileManager
-                                                        .getHighestProfile(profiles.toArray(new String[profiles.size()]));
-                                                if (highestUserProfile != null) {
-                                                    if (Log.isDebugEnabled(Geonet.LDAP)) {
-                                                        Log.debug(Geonet.LDAP, "  Highest user profile is "
-                                                                + highestUserProfile);
-                                                    }
-                                                } else {
-                                                    highestUserProfile = ((profiles != null && profiles.size() > 0) ? profiles.get(0) : Geonet.Profile.REGISTERED_USER);
-                                                }
-                                                Log.error(Geonet.LDAP, "Creating secondary UserGroups entry for user: "
-                                                        + userName + ", group:" + groupName + ", profile:" + highestUserProfile);
+                                                Log.info(Geonet.LDAP, "Creating secondary UserGroups entry for user: "
+                                                        + userName + ", group:" + groupName + ", profile:" + userProfileMap.get(userName));
                                                 String query = "INSERT INTO USERGROUPS(userId, groupId, profile) VALUES(?,?,?)";
-                                                dbms.execute(query, userId, cnInDbGroupId, highestUserProfile);
+                                                dbms.execute(query, userId, cnInDbGroupId, userProfileMap.get(userName));
                                             } else {
                                                 // don't create the group here, that's done earlier.
                                                 Log.info(Geonet.LDAP, "LDAP group with CN:" + cn + " not yet in Geonetwork DB");
@@ -498,6 +520,93 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                 }
             }
         }
+    }
+
+    private Pattern privilegeQueryPatternCompiled;
+    Map<String, String> profileMapping;
+
+    private String getHighestProfile(String username, String cn) {
+        NamingEnumeration<?> ldapInfoList;
+        String highestUserProfile = Geonet.Profile.REGISTERED_USER;
+        try {
+            ProfileManager profileManager = applicationContext
+                    .getBean(ProfileManager.class);
+            DirContext dc = contextSource.getReadOnlyContext();
+
+            String privilegeQuery = (String) jdm.get("privilegeQuery");
+            String privilegeObject = (String) jdm.get("privilegeObject");
+            String privilegeAttribute = (String) jdm.get("privilegeAttribute");
+            String privilegeQueryPattern = (String) jdm.get("privilegeQueryPattern");
+            if (privilegeQueryPattern != null && privilegeQueryPattern.length() > 0) {
+                this.privilegeQueryPatternCompiled = Pattern.compile(privilegeQueryPattern);
+            }
+            String privilegeQueryPrefix = (String) jdm.get("privilegeQueryPrefix");
+            String privilegeQueryPostfix = (String) jdm.get("privilegeQueryPostfix");
+
+            // Extract profile first
+            Set<String> profileList = new HashSet<String>();
+            // will be the DN of the user as the value, so use CN if you have one.
+            if (cn != null && cn.length() > 0) {
+                Log.debug(Geonet.LDAP, "CN: \t" + cn);
+            } else {
+                Log.debug(Geonet.LDAP, "No CN:");
+            }
+            String groupsQuery = MessageFormat.format(privilegeQuery,
+                    ((cn != null && cn.length() > 0) ? cn : username));
+            Log.debug(Geonet.LDAP, "Set Variable in Profile query: \t" + groupsQuery);
+            ldapInfoList = dc.search(privilegeObject, groupsQuery, null);
+            while (ldapInfoList.hasMore()) {
+                SearchResult sr = (SearchResult) ldapInfoList.next();
+                String profileName = (String) sr.getAttributes()
+                        .get(privilegeAttribute).get();
+
+                boolean b;
+                String p;
+                if (privilegeQueryPatternCompiled != null) {
+                    Matcher m = privilegeQueryPatternCompiled
+                            .matcher(profileName);
+                    b = m.matches();
+                    p = m.group(1);
+                } else {
+                    b = true;
+                    p = profileName;
+                }
+                if (b) {
+                    if (profileMapping != null) {
+                        String mapped = profileMapping.get(p);
+                        if (mapped != null) {
+                            p = mapped;
+                        }
+                    }
+                    if (privilegeQueryPrefix != null && privilegeQueryPrefix.length() > 0 &&
+                            p.indexOf(privilegeQueryPrefix) != -1) {
+                        p = p.substring(p.indexOf(privilegeQueryPrefix) + privilegeQueryPrefix.length());
+                    }
+                    if (privilegeQueryPostfix != null && privilegeQueryPostfix.length() > 0 &&
+                            p.indexOf(privilegeQueryPostfix) != -1) {
+                        p = p.substring(0, p.indexOf(privilegeQueryPostfix));
+                    }
+                    profileList.add(p);
+                    Log.debug(Geonet.LDAP, "Can Map LDAP profile '" + p);
+                } else {
+                    Log.error(Geonet.LDAP, "LDAP profile '" + profileName
+                            + "' does not match search pattern '"
+                            + privilegeQueryPattern
+                            + "'. Information ignored.");
+                }
+            }
+            highestUserProfile = profileManager
+                    .getHighestProfile(profileList.toArray(new String[profileList.size()]));
+            if (highestUserProfile != null) {
+                if (Log.isDebugEnabled(Geonet.LDAP)) {
+                    Log.debug(Geonet.LDAP, "  Highest user profile is "
+                            + highestUserProfile);
+                }
+            }
+        } catch (Exception e) {
+            Log.warning(Geonet.LDAP, "Exception checking LDAP profile roles for username:" + username);
+        }
+        return highestUserProfile;
     }
 
     public DefaultSpringSecurityContextSource getContextSource() {

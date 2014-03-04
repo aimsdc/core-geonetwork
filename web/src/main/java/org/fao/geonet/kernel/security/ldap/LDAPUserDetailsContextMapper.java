@@ -49,7 +49,7 @@ public class LDAPUserDetailsContextMapper extends
 
 		// no privilegePattern defined. In that case the user
 		// has the same profile for all groups. The list of groups
-		// is retreived from the privilegeAttribute content
+		// is retrieved from the privilegeAttribute content
 		// getUserInfo(userInfo, mapping.get("profile")[0]));
 
 		// Usually only one profile is defined in the profile attribute
