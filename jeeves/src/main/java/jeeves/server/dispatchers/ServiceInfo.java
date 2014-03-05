@@ -26,6 +26,7 @@ package jeeves.server.dispatchers;
 import jeeves.constants.Jeeves;
 import jeeves.interfaces.Service;
 import jeeves.server.context.ServiceContext;
+import jeeves.utils.Util;
 import jeeves.utils.Xml;
 import org.jdom.Element;
 
@@ -245,6 +246,7 @@ public class ServiceInfo
 			context.getResourceManager().abort();
 			ServiceManager.error("Exception when executing service");
 			ServiceManager.error(" (C) Exc : " + e);
+            ServiceManager.sDebug(" Strack : " + Util.getStackTrace(e));
 
 			throw e;
 		}

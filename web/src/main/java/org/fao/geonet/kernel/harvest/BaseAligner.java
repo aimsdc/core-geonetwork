@@ -29,8 +29,8 @@ public abstract class BaseAligner {
                 for (int opId: priv.getOperations()) {
                     name = dataMan.getAccessManager().getPrivilegeName(opId);
 
-                    //--- allow only: view, dynamic, featured
-                    if (opId == 0 || opId == 5 || opId == 6) {
+                    //--- allow only: view, download, dynamic, featured
+                    if (opId == 0 || opId == 1 || opId == 5 || opId == 6) {
                         if(log.isDebugEnabled()) {
                             log.debug("       --> "+ name);
                         }

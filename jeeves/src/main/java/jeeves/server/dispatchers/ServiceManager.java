@@ -958,6 +958,7 @@ public class ServiceManager
 	static  void info   (String message) { Log.info   (Log.SERVICE, message); }
 	private void warning(String message) { Log.warning(Log.SERVICE, message); }
 	static  void error  (String message) { Log.error  (Log.SERVICE, message); }
+    static  void sDebug  (String message) { Log.debug  (Log.SERVICE, message); }
 	public ProfileManager getProfileManager() { return profilMan; }
 }
 

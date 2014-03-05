@@ -27,16 +27,21 @@ import jeeves.exceptions.OperationAbortedEx;
 import jeeves.interfaces.Logger;
 import jeeves.resources.dbms.Dbms;
 import jeeves.server.context.ServiceContext;
+import jeeves.utils.Log;
 import jeeves.utils.Util;
 import jeeves.utils.Xml;
+import lizard.tiff.Tiff;
 import org.fao.geonet.GeonetContext;
 import org.fao.geonet.constants.Geonet;
+import org.fao.geonet.constants.Params;
 import org.fao.geonet.kernel.DataManager;
 import org.fao.geonet.kernel.harvest.BaseAligner;
 import org.fao.geonet.kernel.harvest.harvester.CategoryMapper;
 import org.fao.geonet.kernel.harvest.harvester.GroupMapper;
 import org.fao.geonet.kernel.harvest.harvester.UUIDMapper;
 import org.fao.geonet.lib.Lib;
+import org.fao.geonet.services.metadata.Create;
+import org.fao.geonet.util.FileCopyMgr;
 import org.fao.oaipmh.OaiPmh;
 import org.fao.oaipmh.exceptions.NoRecordsMatchException;
 import org.fao.oaipmh.requests.GetRecordRequest;
@@ -48,11 +53,18 @@ import org.fao.oaipmh.responses.ListIdentifiersResponse;
 import org.fao.oaipmh.util.ISODate;
 import org.jdom.Element;
 import org.jdom.JDOMException;
+import org.jdom.filter.ElementFilter;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
 
 /**
  *
@@ -266,7 +278,10 @@ class Harvester extends BaseAligner {
         addPrivileges(id, params.getPrivileges(), localGroups, dataMan, context, dbms, log);
 		addCategories(id);
 
-		dbms.commit();
+        // If harvested record has local parent, then set up actual thumbnail files for harvested child
+        syncWithParentThumbnails(id);
+
+        dbms.commit();
 		dataMan.indexMetadata(dbms, id);
 		result.added++;
 	}
@@ -437,10 +452,277 @@ class Harvester extends BaseAligner {
 			dbms.execute("DELETE FROM MetadataCateg WHERE metadataId=?", Integer.parseInt(id));
 			addCategories(id);
 
+            // If harvested record has local parent, then set up actual thumbnail files for harvested child
+            syncWithParentThumbnails(id);
+
 			dbms.commit();
 			dataMan.indexMetadata(dbms, id);
 			result.updated++;
 		}
+	}
+
+    private void syncWithParentThumbnails(String id) throws Exception {
+        String uuid = dataMan.getMetadataUuid(dbms, id);
+        log.info("syncing parent thumbnails for record:" + uuid);
+        String recordSelectQuery = "SELECT schemaId, data, uuid, id FROM Metadata WHERE uuid='" + uuid +"'";
+        log.info("running query:" + recordSelectQuery);
+        java.util.List listUpdated = dbms.select(recordSelectQuery).getChildren();
+        if (listUpdated.size() == 0)
+            throw new IllegalArgumentException("Updated Record uuid not found : " + uuid);
+        Element recordUpdatedEl = (Element) listUpdated.get(0);
+        String schema = recordUpdatedEl.getChildText("schemaid");
+        String childId = recordUpdatedEl.getChildText("id");
+        if (null != schema && schema.trim().startsWith("iso19139.mcp")) {
+            String recordUpdatedData = recordUpdatedEl.getChildText("data");
+            Element recordUpdatedDataEl = Xml.loadString(recordUpdatedData, false);
+            // Lets get the parent and sync it as required.
+            String parentUuid = null;
+            if (recordUpdatedDataEl.getChild("parentIdentifier", Geonet.Namespaces.GMD) != null &&
+                    recordUpdatedDataEl.getChild("parentIdentifier", Geonet.Namespaces.GMD).getChild("CharacterString", Geonet.Namespaces.GCO) != null) {
+                parentUuid = recordUpdatedDataEl.getChild("parentIdentifier", Geonet.Namespaces.GMD).getChildText("CharacterString", Geonet.Namespaces.GCO);
+            }
+            if (parentUuid != null && parentUuid.length() == 36) {
+                // Has to have thumbnail's defined in XML
+                boolean hasThumbnails = false;
+                List<String> thumbnailFileNames = new ArrayList<String>();
+                Iterator graphicOverviewIter = recordUpdatedDataEl.getDescendants(new ElementFilter("graphicOverview", Geonet.Namespaces.GMD));
+                if (graphicOverviewIter != null) {
+                    while (graphicOverviewIter.hasNext()) {
+                        Element graphicOverview = (Element) graphicOverviewIter.next();
+                        Element MD_BrowseGraphic = graphicOverview.getChild("MD_BrowseGraphic", Geonet.Namespaces.GMD);
+                        if (MD_BrowseGraphic != null) {
+                            Element fileDescription = MD_BrowseGraphic.getChild("fileDescription", Geonet.Namespaces.GMD);
+                            if (fileDescription != null && fileDescription.getChildText("CharacterString", Geonet.Namespaces.GCO).indexOf("thumbnail") != -1) {
+                                String fileName = MD_BrowseGraphic.getChild("fileName", Geonet.Namespaces.GMD).getChildText("CharacterString", Geonet.Namespaces.GCO);
+                                String fileType = MD_BrowseGraphic.getChild("fileType", Geonet.Namespaces.GMD).getChildText("CharacterString", Geonet.Namespaces.GCO);
+                                log.debug("Child has a thumbnail defined as gmd:graphicOverview element with fileName:"
+                                        + fileName + " and fileType:" + fileType);
+                                if (fileName != null && fileName.length() > 0) {
+                                    thumbnailFileNames.add(fileName);
+                                    hasThumbnails = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                // thumbnails are inherited from the parent as it's was used as the child record's template on creation
+                if (hasThumbnails) {
+                    String parentIdSQL = "SELECT id, data FROM Metadata WHERE uuid='" + parentUuid + "'";
+                    java.util.List listParent = dbms.select(parentIdSQL).getChildren();
+                    if (listParent.size() > 0) {
+                        Element parentEl = (Element) listParent.get(0);
+                        String parentId = parentEl.getChildText("id");
+                        //set thumbnails from parent
+                        this.copyParentThumbnails(childId, parentId, thumbnailFileNames);
+                    } else {
+                        log.warning("Unable to find parent record for uuid:" + parentUuid);
+                    }
+                } else {
+                    log.info("Unable to assign thumbnail images as none have been defined in the child via gmd:graphicOverview elements");
+                }
+            } else {
+                log.info("No parentIdentifier found in record to update:");
+            }
+        }
+    }
+    private void copyParentThumbnails(final String id, final String pId, List<String> thumbnailFileNames) {
+		//--- copy the thumbnails and resources to the new metadata
+        File oDir = new File(Lib.resource.getDir(context, Params.Access.PUBLIC, pId));
+        if (oDir.exists()) {
+            // check parent directory contains the files defined in the child XML
+            boolean filesExist = true;
+            for (final String fileName: thumbnailFileNames) {
+                FilenameFilter filenameFilter = new FilenameFilter() {
+                    public boolean accept(File dir, String name) {
+                        if (name.equals(fileName)) return true;
+                        return false;
+                    }
+                };
+                File[] thumbnailFiles = oDir.listFiles(filenameFilter);
+                if (thumbnailFiles == null || thumbnailFiles.length == 0) {
+                    log.warning("Could not find thumbnail file:" + fileName + " in parent public data directory");
+                    filesExist = false;
+                }
+            }
+            if (filesExist) {
+                File nDir = new File(Lib.resource.getDir(context, Params.Access.PUBLIC, id));
+                try {
+                    FileCopyMgr.removeDirectoryOrFile(nDir);
+                    Log.info(Geonet.THREADPOOL, "Copying " + oDir.getAbsolutePath() + " to " + nDir.getAbsolutePath());
+                    FileCopyMgr.copyFiles(oDir, nDir);
+                } catch (Exception e) {
+                    Log.error(Geonet.THREADPOOL, "Copying " + oDir.getAbsolutePath() + " to " + nDir.getAbsolutePath() + " failed - " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void createSetThumbnail(String id) throws Exception {
+		log.info("Setting up thumbnail image");
+        // set thumbnail
+        // dataMan.setThumbnail(dbms, id, true, "/usr/local/geonetwork/imosThumbnail.gif");
+        //-----------------------------------------------------------------------
+        //--- create destination directory
+        String dataDir = Lib.resource.getDir(context, Params.Access.PUBLIC, id);
+		log.info("Setting records data directory to " + dataDir);
+        new File(dataDir).mkdirs();
+		//-----------------------------------------------------------------------
+		//--- create the small thumbnail, removing the old one
+        boolean createSmall = true;
+        //String file = "ImosThumbnail.gif";
+        //String sFile = "MESTLogoSmall.png";
+        //String lFile = "MESTLogoLarge.png";
+        String imosThumbNailFile = "GenericImosSensorThumbnail.jpg";
+        if (createSmall) {
+		    log.info("Creating small thumbnail");
+			String inFile    = context.getUploadDir() + imosThumbNailFile;
+			String smallFile = getFileName(imosThumbNailFile, true);
+            String outFile = dataDir + smallFile;
+            removeOldThumbnail(context, id, "small");
+            createThumbnail(inFile, outFile, 180, "width");
+            dataMan.setThumbnail(context, dbms, id, true, smallFile, false);
+        }
+        //-----------------------------------------------------------------------
+        //--- create the requested thumbnail, removing the old one
+        String type = "large";
+        removeOldThumbnail(context, id, type);
+        boolean scaling = true;
+		log.info("Creating large thumbnail");
+        if (scaling) {
+			String inFile    = context.getUploadDir() + imosThumbNailFile;
+            String newFile = getFileName(imosThumbNailFile, type.equals("small"));
+            String outFile = dataDir + newFile;
+            createThumbnail(inFile, outFile, 800, "width");
+            dataMan.setThumbnail(context, dbms, id, type.equals("small"), newFile, false);
+        } else {
+            //--- move uploaded file to destination directory
+            File inFile = new File(context.getUploadDir(), imosThumbNailFile);
+            //File inFile = new File("/usr/local/geonetwork/", file);
+            File outFile = new File(dataDir, imosThumbNailFile);
+            if (!inFile.renameTo(outFile)) {
+                throw new Exception("unable to move uploaded thumbnail to destination directory");
+            }
+            dataMan.setThumbnail(context, dbms, id, type.equals("small"), imosThumbNailFile, false);
+        }
+    }
+
+	private void removeOldThumbnail(ServiceContext context, String id, String type) throws Exception
+	{
+		Element result = dataMan.getThumbnails(dbms, id);
+
+		if (result == null)
+			throw new IllegalArgumentException("Metadata not found --> " + id);
+
+		result = result.getChild(type);
+
+		//--- if there is no thumbnail, we return
+
+		if (result == null) {
+            context.info("There are no old thumbnails to remove");
+			return;
+        }
+
+		//-----------------------------------------------------------------------
+		//--- remove thumbnail
+
+		dataMan.unsetThumbnail(context, dbms, id, type.equals("small"), false);
+
+		//--- remove file
+
+		String file = Lib.resource.getDir(context, Params.Access.PUBLIC, id) + result.getText();
+
+		if (!new File(file).delete())
+			context.error("Error while deleting thumbnail : "+file);
+	}
+
+	//--------------------------------------------------------------------------
+
+	private void createThumbnail(String inFile, String outFile, int scalingFactor,
+										  String scalingDir) throws IOException
+	{
+        log.debug("inFile:" + inFile + ", outFile:" + outFile + ", scalingFactor:" + scalingFactor + ", scalingDir:" + scalingDir);
+		BufferedImage origImg = getImage(inFile);
+
+		int imgWidth  = origImg.getWidth();
+		int imgHeight = origImg.getHeight();
+
+		int width;
+		int height;
+
+		if (scalingDir.equals("width"))
+		{
+			width  = scalingFactor;
+			height = width * imgHeight / imgWidth;
+		}
+		else
+		{
+			height = scalingFactor;
+			width  = height * imgWidth / imgHeight;
+		}
+
+		Image thumb = origImg.getScaledInstance(width, height, BufferedImage.SCALE_SMOOTH);
+
+		BufferedImage bimg = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+
+		Graphics2D g = bimg.createGraphics();
+		g.drawImage(thumb, 0, 0, null);
+		g.dispose();
+
+		log.info("Writing output file:" + outFile);
+		ImageIO.write(bimg, IMAGE_TYPE, new File(outFile));
+	}
+
+	//--------------------------------------------------------------------------
+
+	private String getFileName(String file, boolean small)
+	{
+		int pos = file.lastIndexOf(".");
+
+		if (pos != -1)
+			file = file.substring(0, pos);
+
+		return small 	? file + SMALL_SUFFIX +"."+ IMAGE_TYPE
+							: file +"."+ IMAGE_TYPE;
+	}
+
+	//--------------------------------------------------------------------------
+
+	public BufferedImage getImage(String inFile) throws IOException
+	{
+		String lcFile = inFile.toLowerCase();
+
+		if (lcFile.endsWith(".tif") || lcFile.endsWith(".tiff"))
+		{
+			//--- load the TIFF/GEOTIFF file format
+
+			Image image = getTiffImage(inFile);
+
+			int width = image.getWidth(null);
+			int height= image.getHeight(null);
+
+			BufferedImage bimg = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+			Graphics2D g = bimg.createGraphics();
+			g.drawImage(image, 0,0, null);
+			g.dispose();
+
+			return bimg;
+		}
+		log.info("Reading input file:" + inFile);
+		return ImageIO.read(new File(inFile));
+	}
+
+	//--------------------------------------------------------------------------
+
+	private Image getTiffImage(String inFile) throws IOException
+	{
+		Tiff t = new Tiff();
+		t.readInputStream(new FileInputStream(inFile));
+
+		if (t.getPageCount() == 0)
+			throw new IOException("No images inside TIFF file");
+
+		return t.getImage(0);
 	}
 
 	//---------------------------------------------------------------------------
@@ -458,6 +740,9 @@ class Harvester extends BaseAligner {
 	private GroupMapper    localGroups;
 	private UUIDMapper     localUuids;
 	private OaiPmhResult   result;
+
+    private static final String IMAGE_TYPE   = "png";
+   	private static final String SMALL_SUFFIX = "_s";
 }
 
 //=============================================================================

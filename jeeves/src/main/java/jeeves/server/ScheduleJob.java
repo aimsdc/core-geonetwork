@@ -57,11 +57,16 @@ public class ScheduleJob implements Job {
         } catch (Exception ex) {
             error("CANNOT ABORT PREVIOUS EXCEPTION");
             error(" (C) Exc : " + ex);
+            debug(" Strack : " + Util.getStackTrace(ex));
         }
     }
 
     private void error(String message) {
         Log.error(Log.SCHEDULER, message);
+    }
+
+    private void debug(String message) {
+        Log.debug(Log.SCHEDULER, message);
     }
 
     public void setSchedule(Schedule schedule) {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-	
+
 	<!-- ============================================================================================= -->
 
 	<xsl:include href="../main.xsl"/>
@@ -24,12 +24,12 @@
 
 
 	<xsl:variable name="widgetPath">../../apps</xsl:variable>
-			
-			
+
+
 	<xsl:template mode="script" match="/">
-        
+
         <link rel="stylesheet" type="text/css" href="../../scripts/ext/resources/css/ext-all.css"/>
-        
+
         <script type="text/javascript" src="{/root/gui/url}/scripts/ext/adapter/ext/ext-base.js"/>
         <script type="text/javascript" src="{/root/gui/url}/scripts/ext/ext-all.js"></script>
 		<script type="text/javascript" src="{/root/gui/url}/scripts/core/kernel/kernel.js"/>
@@ -40,7 +40,7 @@
 
 		<script type="text/javascript" src="{/root/gui/url}/scripts/openlayers/OpenLayers.js"/>
 		<script type="text/javascript" src="{/root/gui/url}/scripts/openlayers/lib/OpenLayers/Format/CSWGetRecords/v2_0_2.js"/>
-		
+
 	</xsl:template>
 
 	<!-- ============================================================================================= -->
@@ -64,7 +64,7 @@
 			</xsl:with-param>
 		</xsl:call-template>
 	</xsl:template>
-	
+
 	<!-- ============================================================================================= -->
 	<!-- === listPanel -->
 	<!-- ============================================================================================= -->
@@ -131,9 +131,9 @@
 	<xsl:template name="privileges">
 		<xsl:param name="type"/>
 		<xsl:param name="jsId" required="no" select="$type"/>
-		
+
 		<h1 align="left"><xsl:value-of select="/root/gui/harvesting/privileges"/></h1>
-		
+
 		<table>
 			<tr>
 				<td class="padded" valign="top"><xsl:value-of select="/root/gui/harvesting/groups"/></td>
@@ -147,23 +147,26 @@
 				</td>
 			</tr>
 		</table>
-		
+
 		<table id="{$type}.privileges">
 			<tr>
 				<th class="padded"><b><xsl:value-of select="/root/gui/harvesting/group"/></b></th>
 				<th class="padded"><b><xsl:value-of select="/root/gui/harvesting/oper/op[@id='0']"/></b></th>
+                <xsl:if test="$type = 'oai'">
+					<th class="padded"><b><xsl:value-of select="/root/gui/harvesting/oper/op[@id='1']"/></b></th>
+                </xsl:if>
 				<th class="padded"><b><xsl:value-of select="/root/gui/harvesting/oper/op[@id='5']"/></b></th>
 				<th class="padded"><b><xsl:value-of select="/root/gui/harvesting/oper/op[@id='6']"/></b></th>
 				<th/>
 			</tr>
 		</table>
-		
+
 	</xsl:template>
 
 	<!-- Create elements to define username and password field. -->
 	<xsl:template name="useAccount">
 		<xsl:param name="type"/>
-		
+
 		<tr>
 			<td class="padded"><label for="{$type}.useAccount"><xsl:value-of select="/root/gui/harvesting/useAccount"/></label></td>
 			<td class="padded"><input id="{$type}.useAccount" type="checkbox" checked="on"/></td>
@@ -176,7 +179,7 @@
 						<td class="padded"><label for="{$type}.username"><xsl:value-of select="/root/gui/harvesting/username"/></label></td>
 						<td class="padded"><input id="{$type}.username" class="content" type="text" value="" size="20"/></td>
 					</tr>
-					
+
 					<tr>
 						<td class="padded"><label for="{$type}.password"><xsl:value-of select="/root/gui/harvesting/password"/></label></td>
 						<td class="padded"><input id="{$type}.password" class="content" type="password" value="" size="20"/></td>
@@ -184,8 +187,8 @@
 				</table>
 			</td>
 		</tr>
-		
+
 	</xsl:template>
 	<!-- ============================================================================================= -->
-	
+
 </xsl:stylesheet>

@@ -26,14 +26,14 @@
 			</td>
 		
 			<!-- download - - - - - - - - - - - - - - - - - - - - - - -->
-			
-			<!--td class="padded" align="center">
-				<input name="download" type="checkbox">
-					<xsl:if test="operation/@name = 'download'">
-						<xsl:attribute name="checked" select="'on'"/>
-					</xsl:if>
-				</input>
-			</td-->
+
+            <td class="padded" align="center">
+                <input name="download" type="checkbox">
+                    <xsl:if test="operation/@name = 'download'">
+                        <xsl:attribute name="checked">on</xsl:attribute>
+                    </xsl:if>
+                </input>
+            </td>
 			
 			<!-- notify - - - - - - - - - - - - - - - - - - - - - - -->
 			
