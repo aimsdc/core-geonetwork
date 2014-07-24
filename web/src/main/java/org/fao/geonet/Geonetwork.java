@@ -50,10 +50,7 @@ import jeeves.server.ServiceConfig;
 import jeeves.server.context.ServiceContext;
 import jeeves.server.overrides.ConfigurationOverrides;
 import jeeves.server.resources.ResourceManager;
-import jeeves.utils.ProxyInfo;
-import jeeves.utils.Util;
-import jeeves.utils.Xml;
-import jeeves.utils.XmlResolver;
+import jeeves.utils.*;
 import jeeves.xlink.Processor;
 
 import org.fao.geonet.constants.Geonet;
@@ -791,6 +788,7 @@ public class Geonetwork implements ApplicationHandler {
 			// Copy logo
 			String uuid = UUID.randomUUID().toString();
 			initLogo(servletContext, dbms, uuid, context.getAppPath());
+            initAdminPassword(context, dbms);
 			created = true;
 		} else {
 			logger.info("      Found an existing GeoNetwork database.");
@@ -819,6 +817,22 @@ public class Geonetwork implements ApplicationHandler {
 			logger.error("      Error when setting siteId values: " + e.getMessage());
 		}
 	}
+
+    /**
+     *  If the salt was updated then the new version of the password hash needs to be set or
+     *  admin can't login for first time.
+     *
+      * @param context
+     * @param dbms
+     */
+    private void initAdminPassword(ServiceContext context, Dbms dbms) {
+   		try {
+            String newHash = PasswordUtil.encode(context, "admin");
+   			dbms.execute("UPDATE users SET password=? WHERE username='admin'", newHash);
+   		} catch (SQLException e) {
+   			logger.error("      Error when setting admin user password: " + e.getMessage());
+   		}
+   	}
 
     /**
      * Creates a default site logo, only if the logo image doesn't exists
