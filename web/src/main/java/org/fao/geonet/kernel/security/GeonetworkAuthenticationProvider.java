@@ -63,6 +63,10 @@ public class GeonetworkAuthenticationProvider extends AbstractUserDetailsAuthent
 			Log.warning(Log.JEEVES, "Authentication failed: wrong password provided");
 			throw new BadCredentialsException("Authentication failed: wrong password provided");
 		}
+        Log.info(Log.JEEVES, "Authentication success: Principal: '" + authentication.getPrincipal().toString()
+                 + "' creds: '"
+                //+ authentication.getCredentials().toString()
+                + "'");
 	}
 
 	@Override
@@ -83,13 +87,20 @@ public class GeonetworkAuthenticationProvider extends AbstractUserDetailsAuthent
 					Integer iUserId = Integer.valueOf(userXml.getChildText(Geonet.Elem.ID));
 					if(PasswordUtil.hasOldHash(userXml)) {
 						userXml = PasswordUtil.updatePasswordWithNew(true, oldPassword , oldPassword, iUserId , encoder, dbms);
-					}
-				}
+					} else {
+                        Log.info(Log.JEEVES, "user: " + username + " has current hash.");
+                    }
+                } else {
+                    Log.info(Log.JEEVES, "AuthenticationToken for user: " + username + " is null or has no credentials.");
+                }
 
 				ProfileManager profileManager = applicationContext.getBean(ProfileManager.class);
 				GeonetworkUser userDetails = new GeonetworkUser(profileManager, username, userXml);
+                Log.info(Log.JEEVES, "Found User: " + username + " in user store.");
 				return userDetails;
-			}
+			} else {
+                Log.info(Log.JEEVES, "User: " + username + " not found in user store.");
+            }
 		} catch (Exception e) {
 			try {
 				resourceManager.abort(Geonet.Res.MAIN_DB, dbms);
