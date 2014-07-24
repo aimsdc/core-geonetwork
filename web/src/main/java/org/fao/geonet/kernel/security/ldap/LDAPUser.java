@@ -72,4 +72,24 @@ public class LDAPUser extends JeevesUser {
         this.dn = dn;
         return this;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        result.append("getName:").append(this.getName()).append(", ");
+        result.append("getSurname:").append(this.getSurname()).append(", ");
+        result.append("getUsername:").append(this.getUsername()).append(", ");
+        result.append("getEmail:").append(this.getEmail()).append(", ");
+        result.append("getKind:").append(this.getKind()).append(", ");
+        result.append("getOrganisation:").append(this.getOrganisation()).append(", ");
+        result.append("getCountry:").append(this.getCountry()).append(", ");
+        result.append("getCity:").append(this.getCity()).append(", ");
+        result.append("getState:").append(this.getState()).append(", ");
+        result.append("getAddress:").append(this.getAddress()).append(", ");
+        result.append("getProfile:").append(this.getProfile()).append(", ");
+        result.append("getKind:").append(this.getKind()).append(", ");
+        result.append("getDn:").append(this.getDn()).append(", ");
+        result.append("getCn:").append(this.getCn()).append(", ");
+        return result.toString();
+    }
 }

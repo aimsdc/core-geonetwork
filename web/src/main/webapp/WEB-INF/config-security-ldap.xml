@@ -5,9 +5,10 @@
           http://www.springframework.org/schema/context
           http://www.springframework.org/schema/context/spring-context-3.0.xsd
           http://www.springframework.org/schema/security
-          http://www.springframework.org/schema/security/spring-security-3.1.xsd"
+          http://www.springframework.org/schema/security/spring-security-3.1.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
         xmlns:sec="http://www.springframework.org/schema/security"
         xmlns:ctx="http://www.springframework.org/schema/context"
+        xmlns:util="http://www.springframework.org/schema/util"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://www.springframework.org/schema/beans">
 
@@ -166,6 +167,23 @@
 				<entry key="privilegeQueryPattern" value="${ldap.privilege.search.privilege.pattern}"/>
                 <entry key="privilegeQueryPrefix" value="${ldap.privilege.search.privilege.prefix}"/>
                 <entry key="privilegeQueryPostfix" value="${ldap.privilege.search.privilege.postfix}"/>
+
+                <entry key="userAttributeMapping">
+                    <map>
+                        <entry key="dn" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.dn}"/>
+                        <entry key="cn" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.cn}"/>
+                        <entry key="name" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.name}"/>
+                        <entry key="surname" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.surname}"/>
+                        <entry key="mail" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.mail}"/>
+                        <entry key="organisation" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.organisation}"/>
+                        <entry key="kind" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.kind}"/>
+                        <entry key="address" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.address}"/>
+                        <entry key="zip" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.zip}"/>
+                        <entry key="state" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.state}"/>
+                        <entry key="city" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.city}"/>
+                        <entry key="country" value="${ldapSynchronizer.jobDataAsMap.userAttributeMapping.country}"/>
+                    </map>
+                </entry>
             </map>
         </property>
     </bean>

@@ -174,16 +174,19 @@ public class LDAPUtils {
 				}
 				
 				// --- loop on all attribute's values
-				NamingEnumeration valueEnum;
-				valueEnum = attr.getAll();
-				
+				NamingEnumeration valueEnum = attr.getAll();
+
+                StringBuilder valuesString = new StringBuilder();
 				while (valueEnum.hasMore()) {
 					Object value = valueEnum.next();
 					// Only retrieve String attribute
 					if (value instanceof String) {
 						values.add((String) value);
+                        if (valuesString.length() > 0) valuesString.append(", ");
+                        valuesString.append((String) value);
 					}
 				}
+                Log.debug(Geonet.LDAP, "  - User LDAP attribute:" + id + " has values: " + valuesString);
 			}
 		} catch (NamingException e) {
 			e.printStackTrace();
