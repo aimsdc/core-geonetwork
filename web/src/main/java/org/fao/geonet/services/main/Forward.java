@@ -28,6 +28,7 @@ import jeeves.exceptions.UserNotFoundEx;
 import jeeves.interfaces.Service;
 import jeeves.server.ServiceConfig;
 import jeeves.server.context.ServiceContext;
+import jeeves.utils.Log;
 import jeeves.utils.Util;
 import jeeves.utils.XmlRequest;
 import org.fao.geonet.constants.Geonet;
@@ -39,88 +40,95 @@ import java.util.List;
 
 //=============================================================================
 
-public class Forward implements Service
-{
-	//--------------------------------------------------------------------------
-	//---
-	//--- Init
-	//---
-	//--------------------------------------------------------------------------
+public class Forward implements Service {
+    //--------------------------------------------------------------------------
+    //---
+    //--- Init
+    //---
+    //--------------------------------------------------------------------------
 
-	public void init(String appPath, ServiceConfig config) throws Exception {}
+    public void init(String appPath, ServiceConfig config) throws Exception {
+    }
 
-	//--------------------------------------------------------------------------
-	//---
-	//--- Service
-	//---
-	//--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    //---
+    //--- Service
+    //---
+    //--------------------------------------------------------------------------
 
-	public Element exec(Element params, ServiceContext context) throws Exception
-	{
-		Element site = Util.getChild(params, "site");
-		Element par  = Util.getChild(params, "params");
-		Element acc  = site.getChild("account");
+    public Element exec(Element params, ServiceContext context) throws Exception {
+        Element site = Util.getChild(params, "site");
+        Element par = Util.getChild(params, "params");
+        Element acc = site.getChild("account");
 
-		String url  = Util.getParam(site, "url");
-		String type = Util.getParam(site, "type", "generic");
+        String url = Util.getParam(site, "url");
+        String type = Util.getParam(site, "type", "generic");
 
-		String username = (acc == null) ? null : Util.getParam(acc, "username");
-		String password = (acc == null) ? null : Util.getParam(acc, "password");
+        String username = (acc == null) ? null : Util.getParam(acc, "username");
+        String password = (acc == null) ? null : Util.getParam(acc, "password");
 
-		List<Element> list = par.getChildren();
+        List<Element> list = par.getChildren();
 
-		if (list.size() == 0)
-			throw new MissingParameterEx("<request>", par);
+        if (list.size() == 0)
+            throw new MissingParameterEx("<request>", par);
 
-		XmlRequest req = new XmlRequest(new URL(url));
+        XmlRequest req = new XmlRequest(new URL(url));
 
-		//--- do we need to authenticate?
+        Lib.net.setupProxy(context, req);
 
-		if (username != null)
-			authenticate(req, username, password, type);
+        if (list.size() == 1) {
+            params = (Element) list.get(0);
+            req.setRequest(params);
+        } else {
+            for (int i = 0; i < list.size(); i++) {
+                Element elem = (Element) list.get(i);
+                req.addParam(elem.getName(), elem.getText());
+            }
+        }
 
-		Lib.net.setupProxy(context, req);
+        Element result = null;
+        if (username != null) {
+            try {
+                // this will work if source geonetwork is at least v2.9
+                req.setCredentials(username, password);
+                result = req.execute();
+            } catch (Exception e) {
+                context.getLogger().error("Exception encountered using basic auth for given request - " + e.getMessage());
+                context.getLogger().debug("Exception StackTrace -\n" + Log.getStackTrace(e));
+                // on exception assume older version
+                authenticate(req, username, password, type);
+                result = req.execute();
+            }
+        } else {
+            result = req.execute();
+        }
+        return result;
+    }
 
-		if (list.size() == 1) {
-			params = (Element) list.get(0);
-			req.setRequest(params); 
-		} else {
-			for (int i = 0; i < list.size();i++) {
-				Element elem = (Element) list.get(i);
-				req.addParam(elem.getName(), elem.getText());
-			}
-		}
+    //--------------------------------------------------------------------------
 
-		Element result = req.execute();
-		return result;
-	}
+    private void authenticate(XmlRequest req, String username, String password,
+                              String type) throws Exception {
+        if (!type.equals("geonetwork"))
+            //--- set basic/digest credentials for non geonetwork sites
+            req.setCredentials(username, password);
 
-	//--------------------------------------------------------------------------
+        else {
+            String addr = req.getAddress();
+            int pos = addr.lastIndexOf('/');
 
-	private void authenticate(XmlRequest req, String username, String password,
-									  String type) throws Exception
-	{
-		if (!type.equals("geonetwork"))
-			//--- set basic/digest credentials for non geonetwork sites
-			req.setCredentials(username, password);
+            req.setAddress(addr.substring(0, pos + 1) + Geonet.Service.XML_LOGIN);
+            req.addParam("username", username);
+            req.addParam("password", password);
 
-		else
-		{
-			String addr = req.getAddress();
-			int    pos  = addr.lastIndexOf('/');
+            Element response = req.execute();
 
-			req.setAddress(addr.substring(0, pos +1) + Geonet.Service.XML_LOGIN);
-			req.addParam("username", username);
-			req.addParam("password", password);
+            if (!response.getName().equals("ok"))
+                throw new UserNotFoundEx(username);
 
-			Element response = req.execute();
-
-			if (!response.getName().equals("ok"))
-				throw new UserNotFoundEx(username);
-
-			req.setAddress(addr);
-		}
-	}
+            req.setAddress(addr);
+        }
+    }
 }
 
 //=============================================================================
