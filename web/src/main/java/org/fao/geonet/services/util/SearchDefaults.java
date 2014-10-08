@@ -98,9 +98,11 @@ public class SearchDefaults {
 			Iterator<Element> otherEl = request.getChildren().iterator();
 			while (otherEl.hasNext()) {
 				Element e = otherEl.next();
-				elData
-						.addContent(new Element(e.getName()).setText(e
-								.getText()));
+                // if using CAS and calling xml.search remotely, this is just CAS ticket,
+                // don't add it as search param else search fails!!!
+                // todo Create an enum in Geonet.SearchResult that includes all possible valid search params and check against that.
+                if (e.getName().equals("ticket")) continue;
+				elData.addContent(new Element(e.getName()).setText(e.getText()));
 			}
 
 		} else if (elSession != null) {

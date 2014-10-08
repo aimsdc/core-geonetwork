@@ -77,10 +77,20 @@
 	<bean id="casAuthenticationProvider"
 		class="org.springframework.security.cas.authentication.CasAuthenticationProvider">
 		<property name="authenticationUserDetailsService">
+			<!--
 			<bean
 				class="org.springframework.security.core.userdetails.UserDetailsByNameServiceWrapper">
 				<constructor-arg ref="casUserService" />
 			</bean>
+			-->
+            <bean class="org.fao.geonet.kernel.security.CustomUserDetailsByNameServiceWrapper">
+                <constructor-arg name="userDetailsServiceList">
+                    <list>
+                        <ref bean="casDbUserService"/>
+                        <ref bean="casLdapUserService"/>
+                    </list>
+                </constructor-arg>
+            </bean>
 		</property>
 		<property name="serviceProperties" ref="serviceProperties" />
 		<property name="ticketValidator" ref="casTicketValidator"/>

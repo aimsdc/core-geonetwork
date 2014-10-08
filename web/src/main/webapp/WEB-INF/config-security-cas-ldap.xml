@@ -12,7 +12,7 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans
 
 	<!-- Depends on config-security-ldap.xml also being imported -->
 
-    <bean id="casUserService" class="org.springframework.security.ldap.userdetails.LdapUserDetailsService">
+    <bean id="casLdapUserService" class="org.springframework.security.ldap.userdetails.LdapUserDetailsService">
         <constructor-arg index="0" ref="ldapUserSearch" />
         <property name="userDetailsMapper" ref="ldapUserContextMapper" />
     </bean>

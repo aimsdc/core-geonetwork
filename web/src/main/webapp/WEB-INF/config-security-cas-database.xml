@@ -10,5 +10,5 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
           xmlns="http://www.springframework.org/schema/beans">
 
-	<alias name="geonetworkAuthenticationProvider" alias="casUserService"/>
+	<alias name="geonetworkAuthenticationProvider" alias="casDbUserService"/>
 </beans>
