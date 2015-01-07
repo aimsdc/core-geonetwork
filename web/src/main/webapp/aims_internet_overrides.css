@@ -1,0 +1,314 @@
+/* over-ride geonetwork.css colour */
+
+body {
+    color: #414445;
+}
+
+a {
+    color: #414445;
+}
+
+td.banner-menu {
+    background: #414445;
+}
+
+td.banner-login {
+    background: #414445;
+}
+
+font.banner-tab-active {
+    color: #414445;
+}
+
+input.banner {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+button.banner {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+    float: right;
+}
+
+a.palette:hover {
+    background: #414445;
+}
+
+td.blue-content {
+    color: #ffffff;
+    background: #414445 !important;
+    vertical-align: top;
+}
+
+input.content, select.content, textarea.content {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+.checkbox_results {
+    color: #414445;
+}
+
+a.content, button.content {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+input.content-small, button.content-small {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+fieldset.metadata-block {
+    border-top: 3px #F3F4F5 solid;
+    border-right: 3px #F3F4F5 solid;
+}
+
+fieldset.metadata-block * fieldset {
+    border: 1px #F3F4F5 solid;
+}
+
+input.md, select.md, textarea.md {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+button.md {
+    color: #414445;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+td.box {
+    border: 2px solid #F3F4F5;
+    background: #DDDFE1;
+}
+
+td.dots {
+    border-top: 1px inset #F3F4F5;
+}
+
+div.track {
+    background: #414445;
+}
+
+.dots {
+    border-left: 1px solid #F3F4F5;
+}
+
+.oAcEle {
+    border: 1px solid #F3F4F5;
+}
+
+.oAcEle button {
+    color: #414445;
+}
+
+div.keywordSelector {
+    border: 4px solid #414445;
+}
+
+.IMBtn {
+    color: #414445;
+}
+
+imenabled {
+    color: #414445;
+}
+
+.ilwhiteboard {
+    border: 1px solid #F3F4F5;
+}
+
+button.rating {
+    color: #414445;
+    border: 1px solid #F3F4F5;
+}
+
+img.thumbnail {
+    border: 1px solid #F3F4F5;
+}
+
+/**************************End colour over-rides*********************************************/
+
+h1 {
+    font-size: 20px;
+}
+
+h2 {
+    font-size: 14px;
+}
+
+.row {
+    margin-left: 0px;
+}
+
+.dockbar {
+    visibility: visible;
+}
+
+.padded p {
+    color: rgb(52, 73, 94);
+    font-family: Lato, sans-serif;
+    font-size: 11px;
+    line-height: 13px;
+}
+
+.relatedElements h3 {
+    font-size: 16px;
+}
+
+.relatedElements a {
+    display: block;
+}
+
+.relatedElements li {
+    list-style-image: none;
+    list-style-position: outside;
+    list-style-type: disc;
+}
+
+.relatedElements li li {
+    list-style-type: lower-alpha;
+}
+
+#northBL, #southBL {
+    height: 10px;
+    width: 70px;
+}
+
+#westBL, #eastBL {
+    height: 10px;
+    width: 70px;
+}
+
+.northBL, .southBL {
+    padding: 0px 0px 0px 75px;
+}
+
+.westBL, .eastBL {
+    width: 160px;
+    padding: 0px 0px 0px 0px;
+}
+
+.ol_minimap2, .ol_minimap3 {
+}
+
+#title, #abstract {
+    width: 300px;
+}
+
+#header_panel {
+    height: 150px;
+}
+
+.user-label {
+    float: right;
+    padding-right: 10px;
+}
+
+#sub1_centre_panel {
+    height: 750px;
+    min-height: 750px;
+}
+
+.banner-menu-links {
+    padding-top: 10px;
+    margin-left: 50px;
+}
+
+.banner-menu-lang {
+    padding-top: 10px;
+}
+
+.banner-menu-login {
+    margin-right: 50px;
+}
+
+#main_search_panel ul {
+    list-style-type: none;
+    list-style-position: outside;
+    list-style-image: none;
+    margin-left: 0px;
+}
+
+#gn.uuidAction td {
+    /*white-space: pre-wrap;*/
+}
+
+#gn.importOptionsTable tbody {
+}
+
+.importlabel {
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+.importvalue {
+    width: 450px;
+    min-width: 450px;
+    max-width: 450px;
+}
+
+.importdir {
+    width: 440px;
+}
+
+.importradlab {
+}
+
+.importradval {
+}
+
+.md textarea {
+    /*
+    */
+    width: 500px;
+    min-width: 500px;
+    max-width: 500px;
+}
+
+.md input {
+    /*
+    height: 20px;
+    line-height: 10px;
+    */
+    width: 90%;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+button.content {
+    width: auto;
+}
+
+.padded table {
+    width: 90%;
+}
+
+.md th {
+    width: 150px;
+    font-size: 12px;
+}
+
+.md select {
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+select.content {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    width: 70%;
+}
+
+.x-date-picker {
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+#ol_minimap1 {
+    margin-left: 0px !important;
+}

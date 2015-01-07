@@ -1,0 +1,348 @@
+/* over-ride geonetwork.css colour */
+
+body {
+    color: #34495E;
+}
+
+a {
+    color: #34495E;
+}
+
+td.banner-menu {
+    background: #34495E;
+}
+
+td.banner-login {
+    background: #34495E;
+}
+
+font.banner-tab-active {
+    color: #34495E;
+}
+
+input.banner {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+button.banner {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+    float: right;
+}
+
+a.palette:hover {
+    background: #34495E;
+}
+
+td.blue-content {
+    background: #F3F4F5;
+    vertical-align: top;
+}
+
+input.content, select.content, textarea.content {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+.checkbox_results {
+    color: #34495E;
+}
+
+a.content, button.content {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+input.content-small, button.content-small {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+fieldset.metadata-block {
+    border-top: 3px #F3F4F5 solid;
+    border-right: 3px #F3F4F5 solid;
+}
+
+fieldset.metadata-block * fieldset {
+    border: 1px #F3F4F5 solid;
+}
+
+input.md, select.md, textarea.md {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+button.md {
+    color: #34495E;
+    border: 1px solid #F3F4F5; /* moved here from tr since IE accepts it only here */
+}
+
+td.box {
+    border: 2px solid #F3F4F5;
+    background: #DDDFE1;
+}
+
+td.dots {
+    border-top: 1px inset #F3F4F5;
+}
+
+div.track {
+    background: #34495E;
+}
+
+.dots {
+    border-left: 1px solid #F3F4F5;
+}
+
+.oAcEle {
+    border: 1px solid #F3F4F5;
+}
+
+.oAcEle button {
+    color: #34495E;
+}
+
+div.keywordSelector {
+    border: 4px solid #34495E;
+}
+
+.IMBtn {
+    color: #34495E;
+}
+
+imenabled {
+    color: #34495E;
+}
+
+.ilwhiteboard {
+    border: 1px solid #F3F4F5;
+}
+
+button.rating {
+    color: #34495E;
+    border: 1px solid #F3F4F5;
+}
+
+img.thumbnail {
+    border: 1px solid #F3F4F5;
+}
+
+/**************************End colour over-rides*********************************************/
+
+h1 {
+    font-size: 20px;
+}
+
+h2 {
+    font-size: 14px;
+}
+
+.row {
+    margin-left: 0px;
+}
+
+.dockbar {
+    visibility: visible;
+}
+
+.padded p {
+    color: rgb(52, 73, 94);
+    font-family: Lato, sans-serif;
+    font-size: 11px;
+    line-height: 13px;
+}
+
+.relatedElements h3 {
+    font-size: 16px;
+}
+
+.relatedElements a {
+    display: block;
+}
+
+.relatedElements li {
+    list-style-image: none;
+    list-style-position: outside;
+    list-style-type: disc;
+}
+
+.relatedElements li li {
+    list-style-type: lower-alpha;
+}
+
+#northBL, #southBL {
+    height: 10px;
+    width: 70px;
+}
+
+#westBL, #eastBL {
+    height: 10px;
+    width: 70px;
+}
+
+.northBL, .southBL {
+    padding: 0px 0px 0px 75px;
+}
+
+.westBL, .eastBL {
+    width: 160px;
+    padding: 0px 0px 0px 0px;
+}
+
+.ol_minimap2, .ol_minimap3 {
+}
+
+#title, #abstract {
+    width: 300px;
+}
+
+#header_panel {
+    height: 230px;
+}
+
+.user-label {
+    float: right;
+    padding-right: 10px;
+}
+
+#sub1_centre_panel {
+    height: 750px;
+    min-height: 750px;
+}
+
+#footer_panel {
+}
+
+#header {
+}
+
+.banner-menu-links {
+    padding-top: 10px;
+    margin-left: 50px;
+}
+
+.banner-menu-lang {
+    padding-top: 10px;
+}
+
+.banner-menu-login {
+    margin-right: 50px;
+}
+
+#main_search_panel ul {
+    list-style-type: none;
+    list-style-position: outside;
+    list-style-image: none;
+    margin-left: 0px;
+}
+
+#gn.uuidAction td {
+    /*white-space: pre-wrap;*/
+}
+
+#gn.importOptionsTable tbody {
+}
+
+.importlabel {
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+.importvalue {
+    width: 450px;
+    min-width: 450px;
+    max-width: 450px;
+}
+
+.importdir {
+    width: 440px;
+}
+
+.importradlab {
+}
+
+.importradval {
+}
+
+.md textarea {
+    /*
+    */
+    width: 500px;
+    min-width: 500px;
+    max-width: 500px;
+}
+
+.md input {
+    /*height: 20px;
+    line-height: 10px;*/
+    padding-top: 0px;
+    padding-bottom: 0px;
+    width: 90%;
+}
+
+.padded table {
+    width: 90%;
+}
+
+.md th {
+    width: 150px;
+    font-size: 12px;
+}
+
+.md select {
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+select.content {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    width: 70%;
+}
+
+.x-date-picker {
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+.container-override {
+    width: 1000px;
+}
+
+.brand {
+    padding-top: 10px;
+}
+
+.width150 {
+    width: 150px !important;
+}
+
+.width200 {
+    width: 200px !important;
+}
+
+.span2 ul {
+    list-style-type: none;
+    list-style-position: outside;
+    list-style-image: none;
+    margin-left: 5px !important;
+}
+
+.bottom-menu {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+    padding-top: 10px !important;
+}
+
+.bottom-links, .bottom-icons {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#ol_minimap1 {
+    margin-left: 0px !important;
+}
