@@ -38,3 +38,10 @@ Features
 * Support for OGC-CSW 2.0.2 ISO Profile, OAI-PMH, Z39.50 protocols
 * Fine-grained access control with group and user management
 * Multi-lingual user interface
+
+AIMS Modifications
+------------------
+
+1. Updated LDAP authentication modules to allow integration with Active Directory, specific to how AIMS
+   needed to search for people and groups.
+2. Added custom banner and footer configuration in banner.xsl

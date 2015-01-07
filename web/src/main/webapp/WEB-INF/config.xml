@@ -1272,6 +1272,12 @@
 			<class name=".services.metadata.Insert" />
 		</service>
 
+        <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+      		<service name="xml.metadata.update">
+      			<class name=".services.metadata.Update" />
+      		</service>
+
 		<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
 		<service name="xml.metadata.delete">

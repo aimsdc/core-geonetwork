@@ -213,6 +213,7 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans
                 <sec:intercept-url pattern="/srv/[a-z]{2,3}/metadata.thumbnail.unset!?.*" access="hasRole('Editor')"></sec:intercept-url>
                 <sec:intercept-url pattern="/srv/[a-z]{2,3}/metadata.thumbnail.unset.new!?.*" access="hasRole('Editor')"></sec:intercept-url>
                 <sec:intercept-url pattern="/srv/[a-z]{2,3}/xml.metadata.insert!?.*" access="hasRole('Editor')"></sec:intercept-url>
+                <sec:intercept-url pattern="/srv/[a-z]{2,3}/xml.metadata.update!?.*" access="hasRole('Editor')"></sec:intercept-url>
                 <sec:intercept-url pattern="/srv/[a-z]{2,3}/xml.metadata.delete!?.*" access="hasRole('Editor')"></sec:intercept-url>
                 <sec:intercept-url pattern="/srv/[a-z]{2,3}/xml.user.list!?.*" access="hasRole('Editor')"></sec:intercept-url>
                 <sec:intercept-url pattern="/srv/[a-z]{2,3}/mef.import!?.*" access="hasRole('Editor')"></sec:intercept-url>
