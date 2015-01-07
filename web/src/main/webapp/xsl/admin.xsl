@@ -6,6 +6,26 @@
 
     <xsl:include href="main.xsl"/>
 
+		<xsl:template name="adminscript">
+
+    <xsl:variable name="minimize">
+            <xsl:choose>
+                <xsl:when test="/root/request/debug">?minimize=false</xsl:when>
+                <xsl:otherwise></xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+
+				<script type="text/javascript" src="{/root/gui/url}/static/gn.libs.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+        <script type="text/javascript" src="{/root/gui/url}/static/gn.libs.scriptaculous.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+        <script type="text/javascript" src="{/root/gui/url}/static/gn.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+
+        <script type="text/javascript" src="{/root/gui/url}/static/gn.search.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+        <!-- Editor JS is still required here at least for batch operation -->
+        <script type="text/javascript" src="{/root/gui/url}/static/gn.editor.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+        <script type="text/javascript" src="{/root/gui/url}/static/gn.libs.map.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+        <script type="text/javascript" src="{/root/gui/url}/static/kernel.js{$minimize}"/><xsl:text>&#10;</xsl:text>
+		</xsl:template>
+
     <!-- Use the link parameter to display a custom hyperlink instead of
     a default GeoNetwork Jeeves service URL. -->
     <xsl:template name="addrow">
@@ -103,6 +123,8 @@
             <xsl:with-param name="title" select="/root/gui/strings/admin"/>
             <xsl:with-param name="content">
 
+								<xsl:call-template name="adminscript"/>
+
                 <xsl:variable name="readonly" select="/root/gui/env/readonly = 'true'"/>
 
                 <table width="100%" class="text-aligned-left">
@@ -114,10 +136,9 @@
                             <xsl:call-template name="addrow">
                                 <xsl:with-param name="service" select="'metadata.create.form'"/>
                                 <xsl:with-param name="link">
-                                    <!-- When client application is the widget redirect to that app
-                                    FIXME : hl parameter is only available for GUI widget experimental client.
+                                    <!-- When client application is the widget redirect to the angular js creation page 
                                     -->
-                                    <xsl:if test="/root/gui/config/client/@widget='true'"><xsl:value-of select="concat(/root/gui/config/client/@url, '?hl=', /root/gui/language, /root/gui/config/client/@createParameter)"/></xsl:if>
+                                    <xsl:if test="/root/gui/config/client/@widget='true'"><xsl:value-of select="'catalog.edit#/create'"/></xsl:if>
                                 </xsl:with-param>
                                 <xsl:with-param name="title" select="/root/gui/strings/newMetadata"/>
                                 <xsl:with-param name="desc" select="/root/gui/strings/newMdDes"/>

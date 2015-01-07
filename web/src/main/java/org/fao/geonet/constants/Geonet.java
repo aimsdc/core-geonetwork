@@ -38,7 +38,7 @@ public final class Geonet {
     // TODO make this configurable
 	public static final String DEFAULT_LANGUAGE = "eng";
 	
-	public static final String CC_API_REST_URL = "http://api.creativecommons.org/rest/1.5/simple/chooser";
+	public static final String CC_API_REST_URL = "http://api.creativecommons.org/rest/1.5/";
     public static final String LUCENE_LOCALE_KEY = "_locale";
 
     /**
@@ -55,6 +55,7 @@ public final class Geonet {
 		public static final String UPDATE_FIXED_INFO   = "update-fixed-info.xsl";
 		public static final String UPDATE_CHILD_FROM_PARENT_INFO = "update-child-from-parent-info.xsl";
 		public static final String EXTRACT_UUID        = "extract-uuid.xsl";
+		public static final String EXTRACT_SUBTEMPLATETITLE  = "extract-subtemplate-title.xsl";
 		public static final String EXTRACT_SKOS_FROM_ISO19135 = "xml_iso19135ToSKOS.xsl";
 		public static final String EXTRACT_DATE_MODIFIED = "extract-date-modified.xsl";
 		public static final String SET_UUID            = "set-uuid.xsl";
@@ -576,6 +577,7 @@ public final class Geonet {
 	public static final String DATA_DIRECTORY = GEONETWORK + ".data.directory";
     public static final Version LUCENE_VERSION = Version.LUCENE_36;
     public static final String FEEDBACK = GEONETWORK + ".feedback";
+    public static final String LOG_AUTH = GEONETWORK + ".auth";
 
     /**
      * Services.
@@ -603,5 +605,6 @@ public final class Geonet {
 		public static final Namespace GML32 = Namespace.getNamespace("gml", "http://www.opengis.net/gml/3.2");
 		public static final Namespace XSD = Namespace.getNamespace("xsd", XMLConstants.W3C_XML_SCHEMA_NS_URI);
 		public static final Namespace XSI = Namespace.getNamespace("xsi", XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
+		public static final Namespace SVRL = Namespace.getNamespace("svrl", "http://purl.oclc.org/dsdl/svrl");
 	}
 }

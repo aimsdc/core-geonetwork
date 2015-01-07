@@ -85,7 +85,7 @@ GeoNetwork.searchApp = function() {
                 hideLabel : true,
                 id : 'fullTextField',
                 renderTo : 'fullTextField',
-                width : 170,
+                width : 285,
                 minChars : 2,
                 loadingText : '...',
                 hideTrigger : true,
@@ -96,14 +96,16 @@ GeoNetwork.searchApp = function() {
                     change : function() {
                         if (this.getValue().length > 0)
                             Ext.getCmp('E_trueany').setValue(
-                                    this.getValue() + "*");
+                                    this.getValue() //+ "*"
+																		);
                         else
                             Ext.getCmp('E_trueany').setValue(this.getValue());
                     },
                     keyup : function(e, a) {
                         if (this.getValue().length > 0)
                             Ext.getCmp('E_trueany').setValue(
-                                    this.getValue() + "*");
+                                    this.getValue() //+ "*"
+																		);
                         else
                             Ext.getCmp('E_trueany').setValue(this.getValue());
                         if (a.ENTER == a.keyCode) {
@@ -177,7 +179,8 @@ GeoNetwork.searchApp = function() {
                 name : 'O_nodynamicdownload_',
                 id : 'o_nodynamicdownload',
                 boxLabel : OpenLayers.i18n('No direct download'),
-                renderTo : "ck3"
+                renderTo : "ck3",
+                hidden: true
             });
 
             noDirectDownload_.on("check", function(el) {
@@ -232,15 +235,22 @@ GeoNetwork.searchApp = function() {
                 // tpl: tpl,
                 fieldLabel : OpenLayers.i18n('org')
             });
-            // var denominatorField = GeoNetwork.util.SearchFormTools
-            // .getScaleDenominatorField(true);
 
-            // var groupField = GeoNetwork.util.SearchFormTools.getGroupField(
-            // catalogue.services.getGroups, true);
-            var metadataTypeField = GeoNetwork.util.SearchFormTools
-                    .getMetadataTypeField(true);
-            // var validField = GeoNetwork.util.SearchFormTools
-            // .getValidField(true);
+        		var catalogueField = GeoNetwork.util.SearchFormTools.getCatalogueField(
+                		catalogue.services.getSources, catalogue.services.logoUrl, true);
+        		var groupField = GeoNetwork.util.SearchFormTools.getGroupField(
+                		catalogue.services.getGroups, true);
+        		var statusField = GeoNetwork.util.SearchFormTools.getStatusField(
+                		catalogue.services.getStatus, true);
+        		var metadataTypeField = GeoNetwork.util.SearchFormTools
+                		.getMetadataTypeField(true);
+        		var categoryField = GeoNetwork.util.SearchFormTools.getCategoryField(
+                		catalogue.services.getCategories, '../../apps/images/default/category/', true);
+        		var validField = GeoNetwork.util.SearchFormTools.getValidField(true);
+        		var spatialTypes = GeoNetwork.util.SearchFormTools
+                		.getSpatialRepresentationTypeField(null, true);
+        		var denominatorField = GeoNetwork.util.SearchFormTools
+                		.getScaleDenominatorField(true);
 
             // Add hidden fields to be use by quick metadata links from the
             // admin panel (eg. my metadata).
@@ -256,10 +266,14 @@ GeoNetwork.searchApp = function() {
                 name : 'E_siteId',
                 hidden : true
             });
-            var serviceTypeField = GeoNetwork.util.INSPIRESearchFormTools
-                    .getServiceTypeField(true);
-            advancedCriteria.push(themekeyField, orgNameField,
-                    metadataTypeField, ownerField, isHarvestedField, siteId);
+						var serviceTypeField = GeoNetwork.util.INSPIRESearchFormTools
+						    .getServiceTypeField(true);
+
+						// Leave out themekeyField and orgNameField - handled elsewhere
+            advancedCriteria.push(
+										catalogueField, groupField, statusField, metadataTypeField, 
+										categoryField, validField, spatialTypes, denominatorField,
+                    ownerField, isHarvestedField, siteId);
 
             var sortByCombo = new Ext.form.TextField({
                 name : 'E_sortBy',
@@ -269,7 +283,7 @@ GeoNetwork.searchApp = function() {
 
             var orderBy = new Ext.form.TextField({
                 name : 'E_sortOrder',
-                id : 'E_orderBy',
+                id : 'sortOrder',
                 inputType : 'hidden'
             });
 
@@ -341,33 +355,51 @@ GeoNetwork.searchApp = function() {
                     anchor : '100%'
                 },
 
-                items : inspireFields
+                items : inspireFields,
+                hidden: true // NOTE: Added to anzmest to prevent INSPIRE from
+                             // appearing
             };
 
             var formItems = [];
 
+            var marlinFields = MarLIN.SearchFormTools.getFields
+                                (catalogue.services, true);
             formItems.push({
                 id : 'advSearchTabs',
-                layout : {
-                    type : 'hbox',
-                    defaultMargins : '0 5 0 5',
-                    pack : 'left',
-                    align : 'top',
-                    width : '100%'
-                },
-                border : false,
-                items : [ {
-                    id : 'what-inspire',
-                    layout : 'form',
-                    defaults : {
-                        anchor : '100%'
-                    },
-                    border : false,
-                    items : [ what, inspire ]
-                }, where, when ]
+                plain: true,
+                items:[
+                   // MarLIN panel
+                   {
+                      title:'Keyword Selectors',
+                      margins:'5 5 5 5',
+                      layout:'form',
+                      autoHeight: true,
+                      items: marlinFields
+                   },
+                   // Standard Advanced panel
+                   {
+                      plain: true,
+                      layout : {
+                          type : 'hbox',
+                          defaultMargins : '5 5 5 5',
+                          pack : 'center',
+                          align : 'center',
+                          width : '100%'
+                      },
+                      border : false,
+                      items : [ {
+                          id : 'what-inspire',
+                          layout : 'form',
+                          defaults : {
+                              anchor : '100%'
+                          },
+                          border : false,
+                          items : [ what, inspire ]
+                      }, where, when ]
+                   }]
             });
 
-            this.setAdminFieldsCallback([ metadataTypeField ]);
+            this.setAdminFieldsCallback([ groupField ]);
 
             return new GeoNetwork.SearchFormPanel({
                 id : 'advanced-search-options-content-form',
@@ -393,7 +425,11 @@ GeoNetwork.searchApp = function() {
                             catalogue.startRecord, true);
                     app.searchApp.firstSearch = true;
                     showSearch();
+										hideAdvancedSearch();
                 },
+								resetCb: function() {
+            			Ext.getCmp('sortByToolBar').setValue("relevance");
+								},
                 listeners : {
                     onreset : function() {
                         if (Ext.getCmp('facets-panel')) {
@@ -444,7 +480,7 @@ GeoNetwork.searchApp = function() {
         createBBar : function() {
 
             var previousAction = new Ext.Action({
-                id : 'previousBt',
+                id : 'previousBtFooter',
                 text : '&lt;&lt;',
                 handler : function() {
                     var from = catalogue.startRecord - 50;
@@ -460,7 +496,7 @@ GeoNetwork.searchApp = function() {
             });
 
             var nextAction = new Ext.Action({
-                id : 'nextBt',
+                id : 'nextBtFooter',
                 text : '&gt;&gt;',
                 handler : function() {
                     catalogue.startRecord += 50;
@@ -475,7 +511,7 @@ GeoNetwork.searchApp = function() {
                 items : [ previousAction, {
                     xtype : 'tbtext',
                     text : '',
-                    id : 'info'
+                    id : 'infoFooter'
                 }, nextAction  ]
             });
 
@@ -492,6 +528,8 @@ GeoNetwork.searchApp = function() {
                 displaySerieMembers : true,
                 autoScroll : true,
                 autoWidth : false,
+								protocolToCSS: GeoNetwork.Settings.protocolToCSS,
+								relationToCSS: GeoNetwork.Settings.relationToCSS,
                 tpl : GeoNetwork.HTML5UI.Templates.FULL,
                 templates : {
                     SIMPLE : GeoNetwork.HTML5UI.Templates.SIMPLE,
@@ -512,16 +550,34 @@ GeoNetwork.searchApp = function() {
 
             var tBar = new GeoNetwork.MetadataResultsToolbar({
                 catalogue : catalogue,
+                withPaging: true,
                 searchFormCmp : Ext
                         .getCmp('advanced-search-options-content-form'),
                 sortByCmp : Ext.getCmp('E_sortBy'),
-                metadataResultsView : metadataResultsView
-            // Permalink provider is broken due to cookie state probably
-            // so remove it from the NGR GUI FIXME
-            // permalinkProvider : permalinkProvider
+                metadataResultsView : metadataResultsView,
+                permalinkProvider : permalinkProvider
             });
 
             var bBar = this.createBBar();
+
+            // Add handlers for the pagination buttons in the top bar
+            Ext.getCmp('previousBt').on('click', function() {
+                var from = catalogue.startRecord - 50;
+                if (from > 0) {
+                    catalogue.startRecord = from;
+                    catalogue.search(
+                        'advanced-search-options-content-form',
+                        app.searchApp.loadResults, null,
+                        catalogue.startRecord, true);
+                }
+            });
+
+            Ext.getCmp('nextBt').on('click', function() {
+                catalogue.startRecord += 50;
+                catalogue.search('advanced-search-options-content-form',
+                    app.searchApp.loadResults, null,
+                    catalogue.startRecord, true);
+            });
 
             var resultPanel = new Ext.Panel({
                 id : 'resultsPanel',
@@ -549,10 +605,17 @@ GeoNetwork.searchApp = function() {
             Ext.getCmp('facets-panel').refresh(response);
 
             Ext.getCmp('previousBt').setDisabled(catalogue.startRecord === 1);
-            Ext
-                    .getCmp('nextBt')
+            Ext.getCmp('nextBt')
                     .setDisabled(
                             catalogue.startRecord + 50 > catalogue.metadataStore.totalLength);
+
+            Ext.getCmp('previousBtFooter').setDisabled(catalogue.startRecord === 1);
+            Ext.getCmp('nextBtFooter')
+                .setDisabled(
+                    catalogue.startRecord + 50 > catalogue.metadataStore.totalLength);
+
+            Ext.getCmp("infoFooter").update(Ext.getCmp("info").el.dom.textContent
+                || Ext.getCmp("info").el.dom.innerText);
 
             // Fix for width sortBy combo in toolbar
             // See this:

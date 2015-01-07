@@ -148,6 +148,7 @@ GeoNetwork.HTML5UI.Templates.SHORT_TITLE =
     <a href="javascript:void(0);" onclick="javascript:catalogue.metadataShow(\'{uuid}\');return false;">\
     {[Ext.util.Format.ellipsis(values.title, 30, true)]}</a>\
     </h1>';
+
 GeoNetwork.HTML5UI.Templates.TITLE =
     '<h1>\
     <input type="checkbox" \
@@ -219,7 +220,8 @@ GeoNetwork.HTML5UI.Templates.DOWNLOAD =
  * Validity and category information
  */
 GeoNetwork.HTML5UI.Templates.VALID =
-    '<tpl if="valid != \'-1\'">\
+	'<tpl if="this.isAdmin()">\
+    <tpl if="valid != \'-1\'">\
     <div class="validStatus">\
     <tpl if="valid == \'1\'"><img src="../../apps/html5ui/img/valid_metadata.png"</tpl>\
     <tpl if="valid == \'0\'"><img src="../../apps/html5ui/img/invalid_metadata.png"</tpl>\
@@ -232,7 +234,8 @@ GeoNetwork.HTML5UI.Templates.VALID =
                 <tpl if="values.ratio != \'\'"> ({values.ratio}) </tpl> - \
             </tpl>\
         "></img></div>\
-    </tpl>';
+    </tpl>\
+   </tpl>';
 
 /**
  * Shows if the WMS is valid
@@ -245,15 +248,6 @@ GeoNetwork.HTML5UI.Templates.WMS_VALID = "";
  * Shows if the WFS is valid. WFS validation is made by MetadataResultsView.dislayLinks
  */
 GeoNetwork.HTML5UI.Templates.WFS_VALID = "";
-
-/**
- * Shows Add to favourites
- */
-GeoNetwork.HTML5UI.Templates.BOOKMARK =
-    '<button class="bookmark-icon" value="{title}" \
-    onclick="javascript:bookmarkMetadata(\'{[values.title.replace(\"\'\", \"\")]}\', \'{uuid}\');">\
-        <img title="{[OpenLayers.i18n("Add Bookmark")]}" src="../../apps/html5ui/img/bookmark-add-icon.png"/>\
-    </button>';
 
 /**
  * Display copy to clipboard icon if you are using IE.
@@ -385,7 +379,6 @@ GeoNetwork.HTML5UI.Templates.SIMPLE = new Ext.XTemplate(
 //    GeoNetwork.HTML5UI.Templates.DOWNLOAD,
 //    '</td>\
 //     <td>',
-    GeoNetwork.HTML5UI.Templates.BOOKMARK,
     GeoNetwork.HTML5UI.Templates.LINKCONTAINER,
     '</td>\
      <td>',
@@ -475,6 +468,11 @@ GeoNetwork.HTML5UI.Templates.FULL = new Ext.XTemplate(
                 </tpl>\
                 </p>',    // FIXME : 250 as parameters
                 GeoNetwork.HTML5UI.Templates.SUBJECT,
+								'<p class="abstract">\
+								<tpl if="this.isIdentified() && !(this.statusUnknown(values.status))">\
+									<b>Status:</b> {[this.getStatusText(values.status)]} <i class="status {[this.getStatusText(values.status)]} {[this.getStatusStyle(values.status)]}"></i>\
+								</tpl>\
+								</p>',
             '</td>\
             <td class="thumb">',
                 GeoNetwork.HTML5UI.Templates.RATING_TPL,
@@ -486,7 +484,6 @@ GeoNetwork.HTML5UI.Templates.FULL = new Ext.XTemplate(
     '</table>',
     '<table><tr>',
             '<td>',
-            GeoNetwork.HTML5UI.Templates.BOOKMARK,
             GeoNetwork.HTML5UI.Templates.COPYTOCLIPBOARD,
             '</td>',
             '<td class="icon" colspan="2">',
@@ -506,12 +503,48 @@ GeoNetwork.HTML5UI.Templates.FULL = new Ext.XTemplate(
             GeoNetwork.HTML5UI.Templates.RELATED_DATASETS,
             GeoNetwork.HTML5UI.Templates.DETAILED_METADATA,
             '</td>',
-        '</tr>\
-    </table>',
+        '</tr>',
+    '</table>',
+		'<span style="float:right;margin-right: 5px;"><b>Schema:</b> {[values.schema]}</span>',
     '</li>',
     '</tpl>',
     '</ul>',
     {
+				StatusValues: [
+					{ text: 'Unknown', 		style: 'fa fa-question-circle' },
+					{ text: 'Draft', 			style: 'fa fa-pencil' },
+					{ text: 'Approved', 	style: 'fa fa-thumbs-up' },
+					{ text: 'Retired', 		style: 'fa fa-trash-o' },
+					{ text: 'Submitted', 	style: 'fa fa-cogs' },
+					{ text: 'Rejected', 	style: 'fa fa-thumbs-down' }
+				],
+				isAdmin: function() {
+						return catalogue.isAdmin();
+				},
+				isIdentified: function() {
+						return catalogue.isIdentified();
+				},
+				statusUnknown: function(value) {
+						return (this.getStatusText(value) === 'Unknown');
+				},
+				getStatusText: function(value) {
+						if (!(value instanceof Array)) return this.StatusValues[0].text;
+						var iStatus = value[0].value;
+						if (iStatus > 0 && iStatus < this.StatusValues.length) {
+							return this.StatusValues[iStatus].text;
+						} else {
+							return this.StatusValues[0].text;
+						}
+				},
+				getStatusStyle: function(value) {
+						if (!(value instanceof Array)) return this.StatusValues[0].style;
+						var iStatus = value[0].value;
+						if (iStatus > 0 && iStatus < this.StatusValues.length) {
+							return this.StatusValues[iStatus].style;
+						} else {
+							return this.StatusValues[0].style;
+						}
+				},
         hasDownloadLinks: function(values) {
             var i;
             for (i = 0; i < values.length; i ++) {

@@ -37,6 +37,7 @@ import org.fao.geonet.kernel.harvest.harvester.CategoryMapper;
 import org.fao.geonet.kernel.harvest.harvester.GroupMapper;
 import org.fao.geonet.kernel.harvest.harvester.RecordInfo;
 import org.fao.geonet.kernel.harvest.harvester.UriMapper;
+import org.fao.geonet.util.ISODate;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 
@@ -158,27 +159,65 @@ class Harvester extends BaseAligner{
 		}
 		//--- schema handled check already done
 		String schema = dataMan.autodetectSchema(md);
-		String uuid   = UUID.randomUUID().toString();
 
-        if(log.isDebugEnabled()) log.debug("  - Setting uuid for metadata with remote path : "+ rf.getPath());
 
-		//--- set uuid inside metadata and get new xml
-		try {
-			md = dataMan.setUUID(schema, uuid, md);
-		} catch(Exception e) {
-			log.error("  - Failed to set uuid for metadata with remote path : "+ rf.getPath());
-			return;
-		}
+    // 1.- Look for the file identifier on the metadata xml
+    String uuid = dataMan.extractUUID(schema,  md);
 
-        if(log.isDebugEnabled()) log.debug("  - Adding metadata with remote path : "+ rf.getPath());
+    // 2.- If there is no file identifier, then use the name of the file
+    if (uuid == null) {
+      String path = rf.getPath();
+      int start = path.lastIndexOf("/") + 1;
+      uuid = path.substring(start, path.length() - 4);
+    }
+
+    // 3.- If there is a collision of uuid with existent metadata, use a
+    // random one
+    if (dataMan.existsMetadataUuid(dbms, uuid)) {
+      uuid = null;
+    }
+
+    // 4.- If we still don't have a clear UUID, use a random one (backup
+    // plan)
+    if (uuid == null) {
+      uuid = UUID.randomUUID().toString();
+      log.debug("  - Setting uuid for metadata with remote path : "
+                                + rf.getPath());
+
+      // --- set uuid inside metadata and get new xml
+      try {
+        md = dataMan.setUUID(schema, uuid, md);
+      } catch (Exception e) {
+        log.error("  - Failed to set uuid for metadata with remote path : "
+                                        + rf.getPath());
+				result.badFormat++;
+        return;
+      }
+    }
+
+    log.debug("  - Adding metadata with remote path : " + rf.getPath());
+
+    if(log.isDebugEnabled()) log.debug("  - Adding metadata with remote path : "+ rf.getPath());
 
 		//
         // insert metadata
         //
         String group = null, isTemplate = null, docType = null, title = null, category = null;
         boolean ufo = false, indexImmediate = false;
+
+        String changeDate = rf.getChangeDate();
+        // WAF harvester returns null for the change date, try to get it from the xml
+        if (changeDate == null) {
+            try {
+                changeDate = dataMan.extractDateModified(schema, md);
+            } catch (Exception ex) {
+                log.error("WebDavHarvester - addMetadata - Can't get metadata modified date for metadata uuid= " + uuid + ", using current date for modified date");
+                changeDate = new ISODate().toString();
+            }
+        }
+
         String id = dataMan.insertMetadata(context, dbms, schema, md, context.getSerialFactory().getSerial(dbms, "Metadata"), uuid, Integer.parseInt(params.ownerId), group, params.uuid,
-                     isTemplate, docType, title, category, rf.getChangeDate(), rf.getChangeDate(), ufo, indexImmediate);
+                     isTemplate, docType, title, category, changeDate, changeDate, ufo, indexImmediate);
 
 
 		int iId = Integer.parseInt(id);
@@ -186,7 +225,7 @@ class Harvester extends BaseAligner{
 		dataMan.setTemplateExt(dbms, iId, "n", null);
 		dataMan.setHarvestedExt(dbms, iId, params.uuid, rf.getPath());
 
-        addPrivileges(id, params.getPrivileges(), localGroups, dataMan, context, dbms, log);
+    addPrivileges(id, params.getPrivileges(), localGroups, dataMan, context, dbms, log);
 		addCategories(id);
 
 		dbms.commit();
@@ -278,7 +317,12 @@ class Harvester extends BaseAligner{
             //--- In update we should use db uuid to update the xml uuid and keep in sych both.
             try {
                 String schema = dataMan.autodetectSchema(md);
-                md = dataMan.setUUID(schema, record.uuid, md);
+
+								//Update only if different
+								String uuid = dataMan.extractUUID(schema,  md);
+								if (!record.uuid.equals(uuid)) {
+									md = dataMan.setUUID(schema, record.uuid, md);
+								}
             } catch(Exception e) {
                 log.error("  - Failed to set uuid for metadata with remote path : "+ rf.getPath());
                 return;
@@ -291,7 +335,20 @@ class Harvester extends BaseAligner{
             boolean ufo = false;
             boolean index = false;
             String language = context.getLanguage();
-            dataMan.updateMetadata(context, dbms, record.id, md, validate, ufo, index, language, rf.getChangeDate(), false);
+
+            String changeDate = rf.getChangeDate();
+            // WAF harvester returns null for the change date, try to get it from the xml
+            if (changeDate == null) {
+                try {
+                    String schema = dataMan.autodetectSchema(md);
+                    changeDate = dataMan.extractDateModified(schema, md);
+                } catch (Exception ex) {
+                    log.error("WebDavHarvester - updateMetadata - Can't get metadata modified date for metadata id= " + record.id + ", using current date for modified date");
+                    changeDate = new ISODate().toString();
+                }
+            }
+
+            dataMan.updateMetadata(context, dbms, record.id, md, validate, ufo, index, language, changeDate, true);
 
 			//--- the administrator could change privileges and categories using the
 			//--- web interface so we have to re-set both

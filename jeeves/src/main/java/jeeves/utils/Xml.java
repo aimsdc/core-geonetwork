@@ -24,6 +24,8 @@
 package jeeves.utils;
 
 import jeeves.exceptions.XSDValidationErrorEx;
+import net.sf.json.JSON;
+import net.sf.json.xml.XMLSerializer;
 import net.sf.saxon.Configuration;
 import net.sf.saxon.FeatureKeys;
 
@@ -118,7 +120,8 @@ public final class Xml
 	}
 
     private static SAXBuilder getSAXBuilderWithoutXMLResolver(boolean validate) {
-        SAXBuilder builder = new SAXBuilder(validate);
+        SAXBuilder builder = new JeevesSAXBuilder(validate);
+        //SAXBuilder builder = new SAXBuilder(validate);
         builder.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         return builder;
     }
@@ -1167,5 +1170,37 @@ public final class Xml
 		return SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 	}
 
+	//---------------------------------------------------------------------------
+
+	/**
+     * Converts an xml element to JSON
+     * 
+     * @param xml the XML element
+     * @return the JSON response
+     * 
+     * @throws IOException
+     */
+    public static String getJSON (Element xml) throws IOException {
+        return Xml.getJSON(Xml.getString(xml));
+    }
+    /**
+     * Converts an xml string to JSON
+     * 
+     * @param xml the XML element
+     * @return the JSON response
+     * 
+     * @throws IOException
+     */
+    public static String getJSON (String xml) throws IOException {
+        XMLSerializer xmlSerializer = new XMLSerializer();
+        
+        // Disable type hints. When enable, a type attribute in the root 
+        // element will throw NPE.
+        // http://sourceforge.net/mailarchive/message.php?msg_id=27646519
+        xmlSerializer.setTypeHintsEnabled(false);
+        xmlSerializer.setTypeHintsCompatibility(false);
+        JSON json = xmlSerializer.read(xml);
+        return json.toString(2);
+    }
 
 }

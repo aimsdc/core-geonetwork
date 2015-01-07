@@ -665,7 +665,10 @@ GeoNetwork.Lang.nl = {
     'linklabel-image/jpeg': 'Image link',
     'linklabel-': 'Link',
 		'bigMap': 'Open kaart en verberg zoekresultaten',
-    'createThesaurus': 'Create Thesaurus'
+    'createThesaurus': 'Create Thesaurus',
+	'Online data': 'Web Services',
+    'Login.error.message': 'Username or password incorrect, please try again',
+	'Data for download': 'Data Available'
 };
 
 OpenLayers.Util.extend(OpenLayers.Lang.nl, GeoNetwork.Lang.nl);

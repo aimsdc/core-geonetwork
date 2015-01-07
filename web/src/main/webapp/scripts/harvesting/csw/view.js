@@ -154,8 +154,10 @@ function getData()
 		for(var j=0; j<capList.length; j++){
 			
 				var capName = capList[j].getAttribute('name');
-				obj[capName]= xml.getElementById(divElem, capList[j].textContent).value;
-				
+                var el = xml.getElementById(divElem, capList[j].textContent);
+                if (el != null) {
+                    obj[capName]= el.value;
+                }
 		}
 		
 		searchData.push(obj);
@@ -228,6 +230,10 @@ function updateIcon()
 //=== Search methods
 //=====================================================================================
 
+/**
+ * Old fixed fixed search criteria filters. Not used, now the search criteria fields
+ * are retrieved from the remote server queryables. See https://trac.osgeo.org/geonetwork/ticket/1259
+ */
 function addEmptySearchOld()
 {
 		var doc    = Sarissa.getDomDocument();	
@@ -261,8 +267,8 @@ function addEmptySearch()
    			var searchtmp = doc.createElement('search');
    			
     		var format = new OpenLayers.Format.XML();
-    		var doc = format.read(response.responseText);
-    		var nodes = format.getElementsByTagNameNS(doc, '*', 'Constraint');
+    		var docFormat = format.read(response.responseText);
+    		var nodes = format.getElementsByTagNameNS(docFormat, '*', 'Constraint');
     		var queryables = [];
     		
 			for(var i=0; i < nodes.length; i++) {
@@ -277,12 +283,16 @@ function addEmptySearch()
 			queryables.sort();
 			
 			for (var i=0; i < queryables.length; i++) {
-			    var sub = doc.createElement(queryables[i]);
-                search.appendChild(sub);
-                var text = doc.createTextNode('{'+queryables[i] +'}');
-                var subtmp = doc.createElement(queryables[i]);
-                subtmp.appendChild(text);
-                searchtmp.appendChild(subtmp);
+          // If the queryable has a namespace, replace the : with __
+          // Otherwise the SettingManager doesn't like entries that contains a : in the name
+          var queryableName = queryables[i].replace(":", "__");
+			    var sub = doc.createElement(queryableName);
+          search.appendChild(sub);
+          var text = doc.createTextNode('{'+queryableName +'}');
+          var subtmp = doc.createElement(queryableName);
+
+          subtmp.appendChild(text);
+          searchtmp.appendChild(subtmp);
 			}
 			
 			addSearchTemp(searchtmp);
@@ -303,22 +313,26 @@ function addSearchCap(search)
 {
 	var id = ''+ currSearchId++;
 	search.setAttribute('id', id);
-	
-	elemCap = elemCapTransf.transform(search); 
+
+  search.setAttribute('xmlns:apiso', 'http://www.opengis.net/cat/csw/apiso/1.0');
+  elemCap = elemCapTransf.transform(search);
 	
 	var html = searchCapTransf.transformToText(search);
 	
 	//--- add the new search in list
 	new Insertion.Bottom('csw.searches', html);
-	
 
-	
+  // Only 1 search section is supported
+  Element.hide("csw.addSearch");
 }
 
 //=====================================================================================
 
 function addEditCap(search)
 {
+  // Settings return an empty search element if no searches defined, ignore in this case
+  if (search.childElementCount == 0) return;
+
 	var id = ''+ currSearchId++;
 	search.setAttribute('id', id);
 	
@@ -328,9 +342,9 @@ function addEditCap(search)
 	
 	//--- add the new search in list
 	new Insertion.Bottom('csw.searches', html);
-	
 
-	
+  // Only 1 search section is supported
+  Element.hide("csw.addSearch");
 }
 
 //=====================================================================================
@@ -344,6 +358,11 @@ function addSearchTemp(searchtmp)
 
 //=====================================================================================
 
+
+/**
+ * Old fixed fixed search criteria filters. Not used, now the search criteria fields
+ * are retrieved from the remote server queryables. See https://trac.osgeo.org/geonetwork/ticket/1259
+ */
 function addSearch(search)
 {
 	var id = ''+ currSearchId++;
@@ -374,6 +393,9 @@ function removeSearch(id)
 {
 	valid.removeByParent(id);
 	Element.remove(id);
+
+  // Only 1 search section is supported, if no search panel, show the Add button
+  Element.show("csw.addSearch");
 }
 
 //=====================================================================================
@@ -381,7 +403,10 @@ function removeSearch(id)
 function removeAllSearch()
 {
 	$('csw.searches').innerHTML = '';
-	valid.removeByParent();	
+	valid.removeByParent();
+
+  // Only 1 search section is supported, if no search panel, show the Add button
+  Element.show("csw.addSearch");
 }
 
 //=====================================================================================

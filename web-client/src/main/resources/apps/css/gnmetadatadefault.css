@@ -1,3 +1,7 @@
+.debug {
+  display: none;
+}
+
 .metadata a {
   font-weight : bold;
 }
@@ -604,4 +608,10 @@ be use for custom styling in view mode */
 .gtsTMPeriodDuration + * input,
 .gmlduration + * input {
     float: none !important;
+}
+
+
+/* Hide by default inline help on editor */
+span.editor-help-inline {
+	display: none;
 }

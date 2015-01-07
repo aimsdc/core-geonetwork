@@ -3,16 +3,8 @@
 
 	<xsl:include href="res.xsl"/>
 
-	<xsl:variable name="ccurl" select="/root/gui/schemas/iso19139.mcp/strings/creativeCommonsUrl"/>
-	<xsl:variable name="iccurl" select="/root/gui/schemas/iso19139.mcp/strings/iCreativeCommonsUrl"/>
-
-	<xsl:template mode="title" match="/">
-
-		<xsl:value-of select="/root/gui/schemas/iso19139.mcp/strings/creativeCommonsLicenceOptions"/>
-		<script type="text/javascript" src="{/root/gui/url}/scripts/prototype.js"/>
-		<script type="text/javascript" src="{/root/gui/url}/scripts/geonetwork.js"/>
-
-	</xsl:template>
+	<xsl:variable name="ccurl" select="//strings/creativeCommonsUrl[1]"/>
+	<xsl:variable name="iccurl" select="//strings/iCreativeCommonsUrl[1]"/>
 
 	<!--
 	page content

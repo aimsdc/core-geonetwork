@@ -93,7 +93,6 @@ import java.util.concurrent.Executors;
  */
 public class DataManager {
 
-
     //--------------------------------------------------------------------------
     //---
     //--- Constructor
@@ -148,7 +147,6 @@ public class DataManager {
      *
      **/
     public synchronized void init(ServiceContext context, Dbms dbms, Boolean force) throws Exception {
-
 
         // get all metadata from DB
         Element result = dbms.select("SELECT id, changeDate FROM Metadata ORDER BY id ASC");
@@ -452,7 +450,8 @@ public class DataManager {
                         sb.append(xlink.getValue()); sb.append(" ");
                     }
                     moreFields.add(SearchManager.makeField("_xlink", sb.toString(), true, true));
-                    Processor.detachXLink(md);
+										// ok to use servContext here
+                    Processor.detachXLink(md, servContext);
                 }
                 else {
                     moreFields.add(SearchManager.makeField("_hasxlinks", "0", true, true));
@@ -578,6 +577,10 @@ public class DataManager {
                 }
                 moreFields.add(SearchManager.makeField("_valid", isValid, true, true));
             }
+
+						if (isTemplate.equals("s") && title.trim().equals("")) {
+							title = createSubtemplateTitle(schema, md);
+						}
             searchMan.index(schemaMan.getSchemaDir(schema), md, id, moreFields, isTemplate, title);
         }
         catch (Exception x) {
@@ -1032,6 +1035,30 @@ public class DataManager {
         return uuid;
     }
 
+    /**
+     * Create Title from a subtemplate using the schema
+     * XSL for subtemplate title ({@link Geonet.File.EXTRACT_SUBTEMPLATE_TITLE})
+     *
+     * @param schema
+     * @param md
+     * @return
+     * @throws Exception
+     */
+    public String createSubtemplateTitle(String schema, Element md) throws Exception {
+        String styleSheet = getSchemaDir(schema) + Geonet.File.EXTRACT_SUBTEMPLATETITLE;
+
+				String title = "";
+				if (new File(styleSheet).exists()) {
+        	title       = Xml.transform(md, styleSheet).getText().trim();
+	        //--- needed to detach md from the document
+ 	       	md.detach();
+				}
+
+				if(Log.isDebugEnabled(Geonet.DATA_MANAGER))
+				            Log.debug(Geonet.DATA_MANAGER, "Extracted Subtemplate title '"+ title +"' for schema '"+ schema +"'");
+        return title;
+    }
+
 
     /**
      *
@@ -1476,6 +1503,7 @@ public class DataManager {
         String schema = el.getChildText("schemaid");
         String data   = el.getChildText("data");
         String uuid   = UUID.randomUUID().toString();
+				String title  = null;
 
         //--- generate a new metadata id
         int serial = sf.getSerial(dbms, "Metadata");
@@ -1489,10 +1517,12 @@ public class DataManager {
             if (schemaMan.getSchema(schema).isReadwriteUUID()) {
                 uuid = extractUUID(schema, xml);
             }
-        }
+        } else { // extract a title for subtemplates
+					title = createSubtemplateTitle(schema, xml);
+				}
 
         //--- store metadata
-        String id = xmlSerializer.insert(dbms, schema, xml, serial, source, uuid, null, null, isTemplate, null, owner, groupOwner, "", context);
+        String id = xmlSerializer.insert(dbms, schema, xml, serial, source, uuid, null, null, isTemplate, title, owner, groupOwner, "", context);
         copyDefaultPrivForGroup(context, dbms, id, groupOwner, fullRightsForGroup);
 
         //--- store metadata categories copying them from the template
@@ -1554,6 +1584,9 @@ public class DataManager {
             isTemplate = "n";
         }
 
+        if (isTemplate.equals("s")) { // extract a title for subtemplates
+					title = createSubtemplateTitle(schema, metadata);
+				}
         //--- store metadata
         xmlSerializer.insert(dbms, schema, metadata, id, source, uuid, createDate, changeDate, isTemplate, title, owner, group, docType, context);
 
@@ -1694,7 +1727,7 @@ public class DataManager {
                 if (keepXlinkAttributes) {
                     Processor.processXLink(md, srvContext);
                 } else {
-                    Processor.detachXLink(md);
+                    Processor.detachXLink(md, srvContext);
                 }
             }
         }
@@ -1826,7 +1859,11 @@ public class DataManager {
         if (isTemplate.equals("n")) {
             // Notifies the metadata change to metatada notifier service
             notifyMetadataChange(dbms, md, id);
-        }
+        } else if (isTemplate.equals("s")) { 
+					// extract a title for subtemplates
+					String title = createSubtemplateTitle(schema, md);
+					setTemplateExt(dbms, Integer.parseInt(id), isTemplate, title);
+				}
 
         try {
             //--- do the validation last - it throws exceptions
@@ -2110,7 +2147,7 @@ public class DataManager {
         xmlSerializer.delete(dbms, "Metadata", id, context);
 
         // Notifies the metadata change to metatada notifier service
-        if (isTemplate.equals("n")) {
+        if (isTemplate != null && isTemplate.equals("n")) {
             notifyMetadataDelete(dbms, id, uuid);
         }
 
@@ -2185,8 +2222,8 @@ public class DataManager {
      * @return
      * @throws Exception
      */
-    public Element getThumbnails(Dbms dbms, String id) throws Exception {
-        Element md = xmlSerializer.select(dbms, "Metadata", id);
+    public Element getThumbnails(Dbms dbms, String id, ServiceContext context) throws Exception {
+        Element md = xmlSerializer.select(dbms, "Metadata", id, context);
 
         if (md == null)
             return null;
@@ -2220,13 +2257,16 @@ public class DataManager {
         env.addContent(new Element("file").setText(file));
         env.addContent(new Element("ext").setText(ext));
 
+        String protocol    = settingMan.getValue(Geonet.Settings.SERVER_PROTOCOL);
         String host    = settingMan.getValue(Geonet.Settings.SERVER_HOST);
         String port    = settingMan.getValue(Geonet.Settings.SERVER_PORT);
         String baseUrl = context.getBaseUrl();
 
+        env.addContent(new Element("protocol").setText(protocol));
         env.addContent(new Element("host").setText(host));
         env.addContent(new Element("port").setText(port));
         env.addContent(new Element("baseUrl").setText(baseUrl));
+        env.addContent(new Element("url").setText(getSiteURL()));
 
         manageThumbnail(context, dbms, id, small, env, Geonet.File.SET_THUMBNAIL, indexAfterChange);
     }
@@ -2310,6 +2350,13 @@ public class DataManager {
         }
 
         xmlSerializer.update(dbms, id, md, changeDate, true, uuid, context);
+        String isTemplate = getMetadataTemplate(dbms, id);
+        if (isTemplate.equals("s")) { 
+					// extract a title for subtemplates
+					String title = createSubtemplateTitle(schema, md);
+					setTemplateExt(dbms, Integer.parseInt(id), isTemplate, title);
+				}
+
 
         if (indexAfterChange) {
             // Notifies the metadata change to metatada notifier service
@@ -2375,7 +2422,7 @@ public class DataManager {
      */
     private void manageCommons(Dbms dbms, ServiceContext context, String id, Element env, String styleSheet) throws Exception {
         Lib.resource.checkEditPrivilege(context, id);
-        Element md = xmlSerializer.select(dbms, "Metadata", id);
+        Element md = xmlSerializer.select(dbms, "Metadata", id, context);
 
         if (md == null) return;
 
@@ -2778,7 +2825,12 @@ public class DataManager {
                 env.addContent(new Element("id").setText(id));
                 env.addContent(new Element("uuid").setText(uuid));
                 Element schemaLoc = new Element("schemaLocation");
-                schemaLoc.setAttribute(schemaMan.getSchemaLocation(schema,context));
+								Attribute schemaLocAttr = schemaMan.getSchemaLocation(schema,context);
+								if (schemaLocAttr != null) {
+                	schemaLoc.setAttribute(schemaLocAttr);
+								} else {
+									Log.error(Geonet.DATA_MANAGER, "No schemaLocation attribute defined for schema "+schema);
+								}
                 env.addContent(schemaLoc);
 
                 if (updateDatestamp == UpdateDatestamp.yes) {
@@ -3467,6 +3519,8 @@ public class DataManager {
     private HarvestManager harvestMan;
     private String dataDir;
     private String thesaurusDir;
+		// Note: servContext is logged in as administrator so use with care
+		// eg. notifyMetadata service
     private ServiceContext servContext;
     private String appPath;
     private String stylePath;

@@ -655,7 +655,10 @@ GeoNetwork.Lang.ca={
     'mdEditor': "Editor de metadades",
     'List': "Llista",
 		'bigMap': 'Open Map and hide search results',
-    'createThesaurus': 'Create Thesaurus'
+    'createThesaurus': 'Create Thesaurus',
+	'Online data': 'Web Services',
+    'Login.error.message': 'Username or password incorrect, please try again',
+	'Data for download': 'Data Available'
 };
 
 OpenLayers.Util.extend(OpenLayers.Lang.ca,GeoNetwork.Lang.ca);

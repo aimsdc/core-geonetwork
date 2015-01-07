@@ -34,6 +34,8 @@ import jeeves.utils.Xml;
 import org.fao.geonet.GeonetContext;
 import org.fao.geonet.constants.Geonet;
 import org.fao.geonet.constants.Params;
+import org.fao.geonet.exceptions.NoSchemaMatchesException;
+import org.fao.geonet.exceptions.SchemaMatchConflictException;
 import org.fao.geonet.kernel.DataManager;
 import org.fao.geonet.kernel.SchemaManager;
 import org.jdom.Element;
@@ -117,23 +119,61 @@ public class AddDefault implements Service {
 					String uuid = UUID.randomUUID().toString();
 					String isTemplate = "y";
 					String title = null;
+					boolean skip = false;
 
 					if (templateName.startsWith("sub-")) {
 						isTemplate = "s";
-						title = templateName.substring(4,
+						String tryUuid = xml.getAttributeValue("uuid");
+						if (tryUuid != null && tryUuid.length() > 0) uuid = tryUuid;
+						title = xml.getAttributeValue("title");
+						if (title == null || title.length() == 0) {
+							title = templateName.substring(4,
 								templateName.length() - 4);
+						}
+						
+						// throw away the uuid and title attributes if present as they
+						// cause problems for validation
+						xml.removeAttribute("uuid");
+						xml.removeAttribute("title");
+					} else {
+						try {
+							String trySchemaName = schemaMan.autodetectSchema(xml); // fail if we can't find a schema
+							if (!trySchemaName.equals(schemaName)) {
+								status = "Template "+templateName+" identifies as schema "+trySchemaName+", but should be "+schemaName;
+								skip = true;
+							} else {
+								String tryUuid = dataMan.extractUUID(schemaName, xml);
+								if (tryUuid != null && tryUuid.length() > 0) uuid = tryUuid;
+						  }
+					  } catch (SchemaMatchConflictException smce) {
+							status = "Schema match conflict for template "+templateName;
+							skip = true;
+						} catch (NoSchemaMatchesException nsme) {
+							status = "Unable to match schema for template "+templateName;
+							skip = true;
+						} catch (Exception e) {
+							status = "Problem processing schema/uuid for template "+templateName+": "+e.getMessage();
+							skip = true;
+						}
 					}
-                    //
-                    // insert metadata
-                    //
-                    String groupOwner = "1";
-                    String docType = null, category = null, createDate = null, changeDate = null;
-                    boolean ufo = true, indexImmediate = true;
-					dataMan.insertMetadata(context, dbms, schemaName, xml, context.getSerialFactory().getSerial(dbms, "Metadata"), uuid, owner, groupOwner, siteId,
-                                           isTemplate, docType, title, category, createDate, changeDate, ufo, indexImmediate);
 
-					dbms.commit();
-					status = "loaded";
+					// Check and see whether the metadata is already present, if it is
+					// then don't try and insert as some dbs (postgres) will abort
+					// the transaction....
+					if (dataMan.existsMetadataUuid(dbms, uuid)) {
+						status = "skipped, already loaded";
+					} else if (!skip) {
+          	//
+          	// insert metadata
+          	//
+          	String groupOwner = "1";
+          	String docType = null, category = null, createDate = null, changeDate = null; boolean ufo = true, indexImmediate = true;
+						dataMan.insertMetadata(context, dbms, schemaName, xml, context.getSerialFactory().getSerial(dbms, "Metadata"), uuid, owner, groupOwner, siteId,
+                                           	isTemplate, docType, title, category, createDate, changeDate, ufo, indexImmediate);
+	
+						dbms.commit();
+						status = "loaded";
+					}
 				} catch (Exception e) {
 					serviceStatus = "false";
 					Log.error(Geonet.DATA_MANAGER, "Error loading template: "

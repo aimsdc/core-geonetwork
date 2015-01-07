@@ -272,6 +272,7 @@ GeoNetwork.Lang.en = {
     'password': 'password',
     'login': 'Sign in',
     'logout': 'Sign out',
+    'Login.error.message': 'Username or password incorrect, please try again',
     'administration': 'Administration',
     'validationReport': 'Validation report',
     'setStatus': 'Metadata status',
@@ -393,7 +394,7 @@ GeoNetwork.Lang.en = {
     'newMetadata': 'New metadata',
     'newMetadataTitle': 'Create a metadata by choosing a template and selecting one group',
     'tplTitle': 'Template description',
-    'metadatatype': 'Ressource type',
+    'metadatatype': 'Resource type',
     'process': 'Process',
     'suggestions': 'Suggestions',
     'applySelected': 'Apply selected task',
@@ -662,7 +663,9 @@ GeoNetwork.Lang.en = {
     'cookies.warning': 'This webpage uses cookies, which will save on your computer information about your usage and statistics.',
     'no-thumbnail': 'No thumbnail available',
 		'bigMap': 'Open Map and hide search results',
-    'createThesaurus': 'Create Thesaurus'
+    'createThesaurus': 'Create Thesaurus',
+	'Online data': 'Web Services',
+	'Data for download': 'Data Available'
 };
 
 OpenLayers.Util.extend(OpenLayers.Lang.en, GeoNetwork.Lang.en);

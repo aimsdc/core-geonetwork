@@ -82,7 +82,9 @@ public class CswParams extends AbstractParams
 		if (searches!=null){
 			if (searches.getChild("search")!=null){
 				eltSearches = searches.getChild("search").getChildren();
-			}
+			} else {
+                eltSearches = new ArrayList<Element>();
+            }
 		}
 		
 		
@@ -122,11 +124,12 @@ public class CswParams extends AbstractParams
 		if (searches != null){
 			addSearches(searches);
 		}
-		
+
 		if (searches.getChild("search")!=null){
 			eltSearches = searches.getChild("search").getChildren();
-		}
-
+		} else {
+            eltSearches = new ArrayList<Element>();
+        }
 	}
 
 	//---------------------------------------------------------------------------

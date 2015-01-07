@@ -90,6 +90,11 @@
 					<xsl:attribute name="href"><xsl:value-of
 						select="$baseUrl" />/apps/html5ui/css/gnmetadataview.css</xsl:attribute>
 				</link>
+				<link rel="stylesheet">
+					<xsl:attribute name="href"><xsl:value-of
+						select="$baseUrl" />/apps/html5ui/font-awesome/css/font-awesome.css</xsl:attribute>
+				</link>
+
 
 
 				<!--[if lt IE 7]> <link rel="stylesheet"> <xsl:attribute name="href"><xsl:value-of 
@@ -128,99 +133,85 @@
 				</script>
 			</head>
 			<body>
-             <div id="page-container">  
-				<div id="container">
-					<!--[if lt IE 7]> <p class="chromeframe">You are using an outdated browser. 
-						<a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install 
-						Google Chrome Frame</a> to better experience this site.</p> <![endif] -->
 
+			<div class="grey">
+					<a href="javascript:window.print();" id="printer-button"><i class="fa fa-print"></i><xsl:value-of select="/root/gui/strings/print-button"/></a>
+					<a id="rss-button" href="/geonetwork/srv/eng/rss.latest"><i class="fa fa-rss-square"></i><xsl:value-of select="/root/gui/strings/rss-button"/></a>
+					<span id="login-stuff">
+						<a id="user-button">
+							<xsl:choose>
+								<xsl:when test="string(/root/gui/session/userId)=''">
+							  	<xsl:attribute name="href">javascript:toggleLogin();</xsl:attribute>
+							 	</xsl:when>
+								<xsl:otherwise>
+							  	<xsl:attribute name="href">javascript:app.loginApp.logout();</xsl:attribute>
+							 	</xsl:otherwise>
+						  </xsl:choose>
+							<i class="fa fa-user"></i>
+							<span id="user-button_label">
+								<xsl:choose>
+									<xsl:when test="string(/root/gui/session/userId)=''">
+										<xsl:value-of select="/root/gui/strings/signIn"/>
+							 		</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="/root/gui/strings/signOut"/>
+							 		</xsl:otherwise>
+						  	</xsl:choose>
+							</span>
+						</a>
+						<label id="username_label">
+							<xsl:if test="string(/root/gui/session/userId)!=''">
+								<xsl:value-of select="concat(/root/gui/session/name,' ')"/>
+							</xsl:if>
+						</label>
+						<label id="name_label">
+							<xsl:if test="string(/root/gui/session/userId)!=''">
+								<xsl:value-of select="concat(/root/gui/session/surname,' ')"/>
+							</xsl:if>
+						</label>
+						<label id="profile_label">
+							<xsl:if test="string(/root/gui/session/userId)!=''">
+								<xsl:value-of select="concat('(',/root/gui/session/profile,')')"/>	
+							</xsl:if>
+						</label>
+						<a href="javascript:catalogue.admin();" id="administration-button">
+							<xsl:if test="string(/root/gui/session/userId)=''">
+								<xsl:attribute name="style">display:none;</xsl:attribute>
+							</xsl:if>
+							<i class="fa fa-wrench"></i>
+							<xsl:value-of select="/root/gui/strings/admin"/>
+						</a>
+						<script>function false_(){ return false; }</script>
+						<form id="login-form" style="display: none;" onsubmit="return false_();">
+							<div id="login_div">
+								<label>User name:</label>
+								<input type="text" id="username" name="username"/><br/>
+								<label>Password: </label>
+								<input type="password" id="password" name="password"/><br/>
+								<input type="submit" id="login_button" value="Login"/>
+					  	</div>
+						</form>
+				  </span>
+					<!-- from here on, all elements are floated to the right so 
+					     they are in reverse order -->
+					<a id="help-button" target="_blank" href="/geonetwork/docs/eng/users">
+						<i class="fa fa-question-circle"></i><xsl:value-of select="/root/gui/strings/help"/>
+					</a>
+					<a id="lang-button" href="javascript:toggle('lang-form');">
+            <xsl:for-each select="/root/gui/config/languages/*">
+              <xsl:variable name="lang" select="name(.)"/>
+              <xsl:if test="/root/gui/language=$lang">
+                <span id="current-lang"><xsl:value-of select="/root/gui/strings/*[name(.)=$lang]"/></span>&#160;<i class="fa fa-angle-double-down"></i>
+              </xsl:if>
+            </xsl:for-each>
+						<div id="lang-form" style="display:none;"></div>
+          </a>
+			</div>
+				
+      <div id="page-container">  
+				<div id="container">
 					<div id="header">
-					
-<!-- 		             <div id="first-heading">
-		                <a href="javascript:window.print();" id="printer-button"><xsl:value-of select="/root/gui/strings/print" /></a> 
-		              
-		                <a id="rss-button">
-		                    <xsl:attribute name="href"><xsl:value-of
-		                        select="$baseUrl" />/srv/<xsl:value-of
-		                        select="/root/gui/language" />/rss.search</xsl:attribute>
-		                    
-		                </a>
-		             </div>  
-					 -->
-                       <xsl:variable name="authenticated">
-                           <xsl:value-of select="/root/request/user/authenticated" />
-                       </xsl:variable>
-                        <span class="user-button">
-	                        <a id="user-button">                            
-	                            <xsl:choose>
-	                                <xsl:when test="starts-with($authenticated, 'false')">
-	                                    <xsl:attribute name="href">javascript:toggleLogin();</xsl:attribute>
-	                                    <xsl:value-of select="/root/gui/strings/login" />
-	                                </xsl:when>
-	                                <xsl:otherwise>
-	                                     <xsl:attribute name="href">javascript:app.loginApp.logout();</xsl:attribute>
-                                         <xsl:value-of select="/root/gui/strings/logout" />
-	                                </xsl:otherwise>
-                                </xsl:choose>
-                            </a>
-                            <label id="username_label">
-                                <xsl:value-of select="/root/gui/session/username" />
-                            </label>
-                            <label id="name_label">
-                                <xsl:choose>
-                                    <xsl:when test="starts-with($authenticated, 'true')">
-		                                -
-		                                <xsl:value-of select="/root/gui/session/name" />
-                                    </xsl:when>
-                                </xsl:choose>
-                            </label>
-                            <label id="profile_label">
-                                <xsl:choose>
-                                    <xsl:when test="starts-with($authenticated, 'true')">
-		                                (           
-		                                <xsl:value-of select="/root/gui/session/profile" />
-		                                )
-                                    </xsl:when>
-                                </xsl:choose>
-                            </label>
-                                
-                            <a href="javascript:catalogue.admin();" id="administration_button">
-                                                      
-                                <xsl:choose>
-                                    <xsl:when test="starts-with($authenticated, 'false')">
-                                        <xsl:attribute name="style">display:none</xsl:attribute>
-                                    </xsl:when>
-                                </xsl:choose>
-                                
-                                <xsl:value-of select="/root/gui/strings/admin" />
-                            </a>
-                            <script>
-                                function false_(){
-                                    return false;
-                                }
-                            </script>
-                            <form id="login-form" style="display: none;" onsubmit="return false_();">
-                                    <div id="login_div">
-                                        <label>
-                                            <xsl:value-of select="/root/gui/strings/username" />:
-                                        </label>
-                                        <input type="text" id="username" name="username" />
-                                        <label>
-                                            <xsl:value-of select="/root/gui/strings/password" />:
-                                        </label>
-                                        <input type="password" id="password" name="password" />
-                                        <input type="submit" id="login_button">
-                                            <xsl:attribute name="value">
-                                                <xsl:value-of
-                                                select="/root/gui/strings/login" />
-                                            </xsl:attribute>
-                                        </input>
-                                    </div>
-                                </form>
-                        </span>
-		             
-		               <div id="lang-form"></div>
-		             	<div id="logo"/>
+					  <div id="logo"></div>
 						<header class="wrapper clearfix">
 							<div style="width: 100%; margin: 0 auto;">
 								<nav id="nav">
@@ -241,7 +232,7 @@
 											</a>
 										</li>
 										<li>
-											<a id="about-tab" href="http://geonetwork-opensource.org/" target="about">
+											<a id="about-tab" href="javascript:showAbout();">
 												<xsl:value-of select="/root/gui/strings/about" />
 											</a>
 										</li>
@@ -262,7 +253,7 @@
                        </div>
                        <div id="permalink-div" style="display:none"></div>
                         <div id="bread-crumb-app"></div>
-                        <div id="search-form">
+                        <div id="search-form" style="display:none;">
                             <fieldset id="search-form-fieldset">
                                 <legend id="legend-search">
                                     <xsl:value-of select="/root/gui/strings/search" />
@@ -272,7 +263,7 @@
                                     onclick="Ext.getCmp('advanced-search-options-content-form').fireEvent('search');"
                                     onmouseover="Ext.get(this).addClass('hover');"
                                     onmouseout="Ext.get(this).removeClass('hover');"
-                                    id="search-submit" class="form-submit">
+                                    id="search-submit" class="form-submit" value="&#xf002;">
                                 </input>
                                 <div class="form-dummy">
                                     <span><xsl:value-of select="/root/gui/strings/dummySearch" /></span>
@@ -282,12 +273,10 @@
                                 </div>
                                 
                                 <div id="show-advanced" onclick="showAdvancedSearch()">
-                                    <span class="button">&#160;</span>
-                                    <span><xsl:value-of select="/root/gui/strings/advancedOptions.show" /></span>
+                                    <span class="button"><xsl:value-of select="/root/gui/strings/advancedOptions.show" />&#160;<i class="fa fa-angle-double-down fa-2x show-advanced-icon"></i></span>
                                 </div>
                                 <div id="hide-advanced" onclick="hideAdvancedSearch(true)" style="display: none;">
-                                    <span class="button">&#160;</span>
-                                    <span><xsl:value-of select="/root/gui/strings/advancedOptions.hide" /></span>
+                                    <span class="button"><xsl:value-of select="/root/gui/strings/advancedOptions.hide" />&#160;<i class="fa fa-angle-double-up fa-2x hide-advanced-icon"></i></span>
                                 </div>
                                 <div id="advanced-search-options" >
                                     <div id="advanced-search-options-content"></div>
@@ -297,17 +286,34 @@
 					
 
 	                    <div id="browser">
-	                    	<div id="welcome-text">
-	                               <xsl:value-of select="/root/gui/strings/welcome.text" /></div>
-	                        <a href="javascript:toggle('cloud-tag')" id="tag-cloud-button"> <xsl:value-of select="/root/gui/strings/tag_label" /></a>
-	                        <div id="cloud-tag" style="display:none;"></div>
-	                        <section>
-	                            <div id="latest-metadata"><header>
-                                        <h1><span><xsl:value-of select="/root/gui/strings/latestDatasets" /></span></h1></header></div>
-	                            <div id="popular-metadata"><header>
-                                        <h1><span><xsl:value-of select="/root/gui/strings/popularDatasets" /></span></h1></header></div>
-	                        </section>
-	                    </div>
+                        <aside class="tag-aside">
+	                    	  <div id="welcome-text">
+	                      	  <xsl:copy-of select="/root/gui/strings/welcome.text"/>
+												  </div>
+                          <div id="tags">
+                            <header><h1><span><xsl:value-of select="/root/gui/strings/tag_label" /></span></h1></header>
+                            <div id="cloud-tag"></div>
+                          </div>
+                        </aside>
+                        <article>
+                          <div>
+                            <section>
+                              <div id="latest-metadata">
+                                <header><h1><span><xsl:value-of select="/root/gui/strings/latestDatasets" /></span></h1></header>
+                              </div>
+                              <div id="popular-metadata">
+                                <header><h1><span><xsl:value-of select="/root/gui/strings/popularDatasets" /></span></h1></header>
+                              </div>
+                            </section>
+                          </div>
+                        </article>
+                      </div>
+
+	                    <div id="about" style="display:none;">
+	                    	<div id="about-text">
+	                      	<xsl:copy-of select="/root/gui/strings/about.text"/>
+                        </div>
+                      </div>
 	                    
 						<div id="big-map-container" style="display:none;"/>
                        <div id="metadata-info" style="display:none;"/>
@@ -319,9 +325,10 @@
 								<div id="facets-panel-div"></div>
 							</aside>
 							<article>
-								<aside id="secondary-aside" style="display:none;">
-                                    <div id="mini-map"></div>
-                                    <div id="recent-viewed-div"><h1><xsl:value-of select="/root/gui/strings/recentViewed" /></h1></div>
+								<aside id="secondary-aside" class="secondary-aside" style="display:none;">
+									<header><xsl:value-of select="/root/gui/strings/recentlyViewed" /></header>
+                  <div id="recent-viewed-div"></div>
+                  <div id="mini-map"></div>
 								</aside>
 								<header>
 								</header>
@@ -353,6 +360,9 @@
 					<!-- #main -->
 
 					<div id="footer">
+            <xsl:if test="/root/gui/config/html5ui-footer!='true'">
+              <xsl:attribute name="style">display:none;</xsl:attribute>
+            </xsl:if>
 						<footer class="wrapper">
 							<ul>
 								<li style="float:left">
@@ -384,143 +394,18 @@
                      </xsl:otherwise>
                  </xsl:choose>
 
-				<xsl:choose>
-					<xsl:when test="/root/request/debug">
-						
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/Rating/RatingItem.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/FileUploadField/FileUploadField.js</xsl:attribute>
-						</script>
-						
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/TwinTriggerComboBox/TwinTriggerComboBox.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/DateTime/DateTime.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/RowExpander/RowExpander.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/MultiselectItemSelector-3.0/DDView.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/MultiselectItemSelector-3.0/Multiselect.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/SuperBoxSelect/SuperBoxSelect.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/ext-ux/LightBox/lightbox.js</xsl:attribute>
-						</script>
-						
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/proj4js-compressed.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/OpenLayers/lib/OpenLayers.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/GeoExt/lib/overrides/override-ext-ajax.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/GeoExt/lib/GeoExt.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/GeoExt-ux/LayerOpacitySliderPlugin/LayerOpacitySliderPlugin.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/GeoExt-ux/TabCloseMenu/TabCloseMenu.js</xsl:attribute>
-						</script>
-						
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/js/GeoNetwork/lib/GeoNetwork.js</xsl:attribute>
-						</script>
-						
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/GlobalFunctions.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/Settings.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/Templates.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/Shortcuts.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/map/Settings.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/map/MapApp.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/search/SearchApp.js</xsl:attribute>
-						</script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/user/LoginApp.js</xsl:attribute>
-						</script>
-                        <script type="text/javascript">
-                            <xsl:attribute name="src"><xsl:value-of
-                                select="$baseUrl" />/apps/html5ui/js/state/PermalinkProvider.js</xsl:attribute>
-                        </script>
-                        <script type="text/javascript">
-                            <xsl:attribute name="src"><xsl:value-of
-                                select="$baseUrl" />/apps/html5ui/js/state/History.js</xsl:attribute>
-                        </script>
-						<script type="text/javascript">
-							<xsl:attribute name="src"><xsl:value-of
-								select="$baseUrl" />/apps/html5ui/js/BreadCrumb.js</xsl:attribute>
-                        </script>
-                        <script type="text/javascript">
-                            <xsl:attribute name="src"><xsl:value-of
-                                select="$baseUrl" />/apps/js/GeoNetwork/lib/GeoNetwork/map/windows/AddWMTS.js</xsl:attribute>
-                        </script>
-                        <script type="text/javascript">
-                            <xsl:attribute name="src"><xsl:value-of
-                                select="$baseUrl" />/apps/js/GeoNetwork/lib/GeoNetwork/map/widgets/tree/WMTSTreeGenerator.js</xsl:attribute>
-                        </script>
-                        <script type="text/javascript">
-                            <xsl:attribute name="src"><xsl:value-of
-                                select="$baseUrl" />/apps/html5ui/js/App.js</xsl:attribute>
-						</script>
-						
-					</xsl:when>
-					<xsl:otherwise>
-						<script type="text/javascript" src="{concat($baseUrl, '/apps/html5ui/js/App-mini.js')}"></script>
-					</xsl:otherwise>
-				</xsl:choose>
+				 <xsl:variable name="minimize">
+				   <xsl:choose>
+						 <xsl:when test="/root/request/debug">?minimize=false</xsl:when>
+						 <xsl:otherwise></xsl:otherwise>
+					</xsl:choose>
+				</xsl:variable>
 
+				<script type="text/javascript" src="{concat($baseUrl, '/static/geonetwork-client-mini-nomap.js', $minimize)}"></script>
+				<script type="text/javascript" src="{concat($baseUrl, '/static/geonetwork-client-mini.js', $minimize)}"></script>
+				<script type="text/javascript" src="{concat($baseUrl, '/static/geonetwork-client-html5ui-app.js', $minimize)}"></script>
 
-
-            </div>
+        </div>
 		</body>
 	</html>
 	</xsl:template>
