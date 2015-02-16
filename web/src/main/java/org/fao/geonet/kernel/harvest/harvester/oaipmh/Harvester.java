@@ -609,7 +609,7 @@ class Harvester extends BaseAligner {
 
 	private void removeOldThumbnail(ServiceContext context, String id, String type) throws Exception
 	{
-		Element result = dataMan.getThumbnails(dbms, id);
+		Element result = dataMan.getThumbnails(dbms, id, context);
 
 		if (result == null)
 			throw new IllegalArgumentException("Metadata not found --> " + id);
