@@ -9,7 +9,7 @@
     </div>
 
     <input type="text" class="form-control" placeholder="{{'searchAnOrganisation' | translate}}"
-           data-ng-model="params.any" data-ng-change="triggerWildSubtemplateSearch('mcp:CI_Organisation')"/>
+           data-ng-model="params.any" data-ng-change="triggerWildSubtemplateSearch($parent.params._root)"/>
 
     <!-- The autocomplete list -->
     <div class="list-group tt-dropdown-menu gn-autocomplete-list"
