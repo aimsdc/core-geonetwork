@@ -24,7 +24,9 @@
 package org.fao.geonet.kernel.mef;
 
 import jeeves.exceptions.BadFormatEx;
+import jeeves.utils.Log;
 import jeeves.utils.Xml;
+import org.fao.geonet.constants.Geonet;
 import org.jdom.Element;
 
 import java.io.File;
@@ -122,18 +124,18 @@ public class MEFVisitor implements IVisitor {
 				String fullName = entry.getName();
 				String simpleName = new File(fullName).getName();
 
-				if (fullName.equals(DIR_PUBLIC) || fullName.equals(DIR_PRIVATE))
-					continue;
+				if (fullName.equals(DIR_PUBLIC) || fullName.equals(DIR_PRIVATE)) continue;
 
-				if (fullName.startsWith(DIR_PUBLIC) || fullName.startsWith("/" + DIR_PUBLIC))
+				if (fullName.startsWith(DIR_PUBLIC) || fullName.startsWith(File.separator + DIR_PUBLIC)) {
 					v.handlePublicFile(simpleName, MEFLib.getChangeDate(
 							pubFiles, simpleName), isb, 0);
-
-				else if (fullName.startsWith(DIR_PRIVATE) || fullName.startsWith("/" + DIR_PRIVATE))
+				} else if (fullName.startsWith(DIR_PRIVATE) || fullName.startsWith(File.separator + DIR_PRIVATE)) {
 					v.handlePrivateFile(simpleName, MEFLib.getChangeDate(
 							prvFiles, simpleName), isb, 0);
+				}
 
 				zis.closeEntry();
+				if (Log.isDebugEnabled(Geonet.MEF)) Log.debug(Geonet.MEF, "Handled file with name=" + fullName);
 			}
 		} finally {
 			safeClose(zis);

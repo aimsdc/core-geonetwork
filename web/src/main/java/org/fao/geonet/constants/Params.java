@@ -95,6 +95,7 @@ public final class Params {
 	public static final String OPERATES_ON  = "operatesOn";	
 	public static final String UUID_ACTION  = "uuidAction";
 	public static final String NOTHING      = "nothing";
+	public static final String UPDATE      = "update";
 	public static final String PROCESS      = "process";
 
 	public static final String SCALING              = "scaling";

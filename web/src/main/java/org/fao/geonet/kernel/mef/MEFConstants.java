@@ -23,18 +23,20 @@
 
 package org.fao.geonet.kernel.mef;
 
+import java.io.File;
+
 /**
  * Main MEF constants. 
  */
 class MEFConstants {
 
-	static final String DIR_PUBLIC = "public/";
-	static final String DIR_PRIVATE = "private/";
+	static final String DIR_PUBLIC = "public" + File.separator;
+	static final String DIR_PRIVATE = "private" + File.separator;
 	static final String FILE_METADATA = "metadata.xml";
 	static final String FILE_INFO = "info.xml";
 	static final String VERSION = "1.1";
-    static final String MD_DIR = "metadata/";
-	static final String SCHEMA = "applschema/";
-	static final String FS = "/";
+    static final String MD_DIR = "metadata" + File.separator;
+	static final String SCHEMA = "applschema" + File.separator;
+	static final String FS = File.separator;
 	static final String FILE_METADATA_19139 = "metadata.iso19139.xml";
 }

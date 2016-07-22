@@ -19,7 +19,7 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans
 
     <bean id="ldapUserSearch" class="org.springframework.security.ldap.search.FilterBasedLdapUserSearch">
         <constructor-arg index="0" value="${ldap.sync.user.search.base}"/>
-        <constructor-arg index="1" value="${ldap.sync.user.search.filter}"/>
+        <constructor-arg index="1" value="${ldap.sync.user.cas.search.filter}"/>
         <constructor-arg index="2" ref="contextSource" />
     </bean>
 
