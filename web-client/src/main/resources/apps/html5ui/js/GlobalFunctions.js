@@ -17,6 +17,8 @@
  * along with GeoNetwork.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var loadedNMJS = false;
+
 // The following functions are for the advanced search hiding and showing
 function hide(id) {
     if (Ext.get(id)) {
@@ -47,8 +49,9 @@ function toggle(id) {
 }
 
 function showBrowse() {
-    // Reset search for tag cloud
-    // catalogue.kvpSearch("fast=index&from=1&to=5&sortBy=changeDate", null, null, null, true);
+    // Reset search for tag cloud and render the different sections of the page
+    //catalogue.kvpSearch("fast=index&from=1&to=5&sortBy=changeDate", null, null, null, true);
+		app.rebuildBrowse();
 
     show("main");
     hide("search-form");
@@ -62,8 +65,8 @@ function showBrowse() {
     //show("latest-metadata");
     //show("popular-metadata");
 
-    app.breadcrumb.setPrevious([]);
-    app.breadcrumb.setCurrent(app.breadcrumb.defaultSteps[0]);
+    //app.breadcrumb.setPrevious([]);
+    //app.breadcrumb.setCurrent(app.breadcrumb.defaultSteps[0]);
 
     Ext.each(Ext.query('a', Ext.get("main-navigation").dom), function(a) {
         Ext.get(a).removeClass("selected");
@@ -88,7 +91,7 @@ function showAbout() {
     hideBigMap();
     hideMetadata();
 
-    app.breadcrumb.setCurrent(app.breadcrumb.defaultSteps[2]);
+    //app.breadcrumb.setCurrent(app.breadcrumb.defaultSteps[2]);
 
     Ext.each(Ext.query('a', Ext.get("main-navigation").dom), function(a) {
         Ext.get(a).removeClass("selected");
@@ -101,6 +104,20 @@ function hideAbout() {
     hide("about");
 }
 
+					function doLoadSS(stylesheetUrl) {
+						var l = document.createElement('link'); l.rel = 'stylesheet';
+						l.href = stylesheetUrl;
+						var h = document.getElementsByTagName('head')[0]; h.parentNode.insertBefore(l, h);
+					};
+					function doLoadJS(jsUrl){
+					  var s = document.createElement('script');
+						s.type = 'text/javascript';
+						s.async = true;
+						s.src = jsUrl;
+						var x = document.getElementsByTagName('script')[0];
+						x.parentNode.insertBefore(s, x);
+					}
+
 function showBigMap() {
     hideBrowse();
     hideSearch();
@@ -110,26 +127,22 @@ function showBigMap() {
 
     // show map
     show("big-map-container");
-    // Resize the map, to cover all space available:
-    //resizeMap();
-
-    app.breadcrumb.setCurrent({
-        text : OpenLayers.i18n("Map"),
-        func : "showBigMap()"
-    });
-
-    // Printpanel can be only initiazed once the map is rendered
-    // Trigger the print panel init only when the big map is displayed
-    // the first time. It will check if the print panel is already initiliazed
-    // or not
-    //app.mapApp.initPrint();
-    
 
     Ext.each(Ext.query('a', Ext.get("main-navigation").dom), function(a) {
         Ext.get(a).removeClass("selected");
     });
 
     Ext.get("map-tab").addClass("selected");
+
+		if (!loadedNMJS) {
+					// lazy load the css and js required for nationalmap once page load is finished, taken from
+					// http://www.giftofspeed.com/defer-loading-css/ and the ga stuff above
+					doLoadSS("../../nationalmap/public/third_party/leaflet/leaflet.css");
+					doLoadSS("../../nationalmap/public/build/Cesium/Widgets/cesiumwidgetsbundle.css");
+					doLoadSS("../../nationalmap/public/css/AusGlobeViewer.css");
+					doLoadJS("../../static/nationalmap.js");
+					loadedNMJS = true;
+	 }
 }
 
 function hideBigMap() {
@@ -147,6 +160,8 @@ function showSearch() {
     Ext.getCmp('resultsPanel').show();
     Ext.get('resultsPanel').show();
     show("main-aside");
+		show("bread-crumb-div");
+		show("bread-crumb-app");
 
     app.breadcrumb.setDefaultPrevious(1);
     app.breadcrumb.setCurrent(app.breadcrumb.defaultSteps[1]);
@@ -172,6 +187,8 @@ function hideSearch() {
     hide("secondary-aside");
     hide("resultsPanel");
     hide("main-aside");
+		hide("bread-crumb-div");
+		hide("bread-crumb-app");
 }
 
 function showMetadata() {
@@ -182,7 +199,8 @@ function showMetadata() {
     hideSearch();
     hideBigMap();
 
-    show("metadata-info");
+    show("metadata-container");
+		show("bread-crumb-app");
 
     app.breadcrumb.setDefaultPrevious(2);
 
@@ -194,8 +212,9 @@ function showMetadata() {
 }
 
 function hideMetadata() {
-    hide("metadata-info");
+    hide("metadata-container");
     hide("share-capabilities");
+		hide("bread-crumb-app");
 
     // Destroy potential existing panel
     Ext.getCmp('metadata-panel') && Ext.getCmp('metadata-panel').destroy();
@@ -214,49 +233,6 @@ function resizeResultsPanel() {
             });
         });
     });
-}
-
-function resizeMap() {
-
-    if (Ext.getCmp("big-map")) {
-        Ext.getCmp("big-map").doLayout(false, true);
-
-        var div = Ext.get("big-map");
-
-        var setChildrens = function(children) {
-            Ext.each(children, function(child) {
-                child = Ext.get(child);
-                var classN = child.dom.className;
-                if (classN
-                        && classN.indexOf
-                        && (classN.indexOf("tbar") < 0 && classN
-                                .indexOf("x-panel-header") < 0)) {
-                    child.setHeight("100%");
-                    if (child.id
-                            && (child.id.indexOf("ViewPort") < 0 && child.id
-                                    .indexOf("layerManager") < 0)) {
-                        setChildrens(child.dom.children);
-                    }
-                }
-            });
-        };
-        var height = Ext.getBody().getHeight() - Ext.get("footer").getHeight()
-                - Ext.get("header").getHeight()
-                - Ext.get("search-form").getHeight() - 20;
-
-        setChildrens(div);
-        div.setHeight(height);
-    }
-
-    if (Ext.getCmp("layerManager")) {
-        Ext.getCmp("layerManager").collapse(false);
-        Ext.getCmp("layerManager").expand(false);
-    }
-    app.mapApp.getMap().updateSize();
-
-    if (app.mapApp.getMap().getZoom() < 4) {
-        app.mapApp.getMap().zoomTo(4);
-    }
 }
 
 function showAdvancedSearch() {
@@ -307,10 +283,9 @@ function resetAdvancedSearch(updateSearch) {
         Ext.getCmp('E_download').checked = (Ext.getCmp("o_download").getValue());
         Ext.getCmp('E_download').resumeEvents();
 
-        Ext.getCmp('E_nodynamicdownload').suspendEvents(false);
-        Ext.getCmp('E_nodynamicdownload').checked = (
-        Ext.getCmp("o_nodynamicdownload").getValue());
-        Ext.getCmp('E_nodynamicdownload').resumeEvents();
+        Ext.getCmp('mymetadata').suspendEvents(false);
+        Ext.getCmp('mymetadata').checked = false;
+				Ext.getCmp('mymetadata').resumeEvents();
 
 				Ext.getCmp('sortByToolBar').setValue("relevance");
 
@@ -328,7 +303,7 @@ function hideAdvancedSearch(updateSearch) {
     hide('advanced-search-options');
     hide('legend-search');
     hide('hide-advanced');
-    Ext.get("search-form-fieldset").dom.style.border = "none";
+		if (Ext.get("search-form-fieldset")) Ext.get("search-form-fieldset").dom.style.border = "none";
     show('show-advanced');
     if (updateSearch) {
         if (cookie && cookie.get('user')) {
@@ -376,7 +351,7 @@ function copyToClipboard(text) {
  * @return {String}
  */
 function metadataViewURL(uuid) {
-    return window.location.href.match(/(http.*\/.*)\/srv\.*/, '')[1] + '?uuid='
+    return window.location.href.match(/(http.*\/.*)\/srv\.*/, '')[1] + '#!'
             + uuid;
 }
 

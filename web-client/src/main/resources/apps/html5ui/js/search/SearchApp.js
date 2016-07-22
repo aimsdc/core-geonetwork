@@ -49,7 +49,7 @@ GeoNetwork.searchApp = function() {
         },
         /**
          * Set event in order to display some search criteria only when user is
-         * logged in.
+         * logged in and administrator.
          */
         setAdminFieldsCallback : function(adminFields) {
             // Hide or show extra fields after login event
@@ -57,28 +57,60 @@ GeoNetwork.searchApp = function() {
                 item.setVisible(catalogue.identifiedUser
                         && catalogue.identifiedUser.role === "Administrator");
             });
-            catalogue
-                    .on(
-                            'afterLogin',
-                            function() {
-                                Ext
-                                        .each(
-                                                adminFields,
-                                                function(item) {
-                                                    item
-                                                            .setVisible(catalogue.identifiedUser
-                                                                    && catalogue.identifiedUser.role === "Administrator");
-                                                });
-                                GeoNetwork.util.SearchFormTools
-                                        .refreshGroupFieldValues();
-                            });
+            catalogue.on('afterLogin', function() {
+                Ext.each(adminFields, function(item) {
+                    item.setVisible(catalogue.identifiedUser && catalogue.identifiedUser.role === "Administrator");
+                });
+                GeoNetwork.util.SearchFormTools.refreshGroupFieldValues();
+            });
             catalogue.on('afterLogout', function() {
                 Ext.each(adminFields, function(item) {
                     item.setVisible(!(catalogue.identifiedUser === undefined));
                 });
                 GeoNetwork.util.SearchFormTools.refreshGroupFieldValues();
             });
-
+        },
+        /**
+         * Set event in order to display some search criteria only when a registered, non-administrator user is
+         * logged in - avoid administrator.
+         */
+        setRegisteredUserFieldsOnlyCallback : function(registeredUserFields) {
+            // Hide or show extra fields after login event
+						var loggedIn = catalogue.identifiedUser && catalogue.identifiedUser.role !== "Administrator";
+            Ext.each(registeredUserFields, function(item) {
+                item.setVisible(loggedIn);
+            });
+            catalogue.on('afterLogin', function() {
+                Ext.each(registeredUserFields, function(item) {
+                    item.setVisible(catalogue.identifiedUser && catalogue.identifiedUser.role !== "Administrator");
+                });
+            });
+            catalogue.on('afterLogout', function() {
+                Ext.each(registeredUserFields, function(item) {
+                    item.setVisible(false);
+                });
+            });
+        },
+        /**
+         * Set event in order to display some search criteria only when user is
+         * logged in.
+         */
+        setRegisteredUserFieldsCallback : function(registeredUserFields) {
+            // Hide or show extra fields after login event
+						var loggedIn = catalogue.identifiedUser;
+            Ext.each(registeredUserFields, function(item) {
+                item.setVisible(loggedIn);
+            });
+            catalogue.on('afterLogin', function() {
+                Ext.each(registeredUserFields, function(item) {
+                    item.setVisible(catalogue.identifiedUser);
+                });
+            });
+            catalogue.on('afterLogout', function() {
+                Ext.each(registeredUserFields, function(item) {
+                    item.setVisible(false);
+                });
+            });
         },
         generateSimpleSearchForm : function() {
             var field = new GeoNetwork.form.OpenSearchSuggestionTextField({
@@ -157,7 +189,7 @@ GeoNetwork.searchApp = function() {
             });
 
             var dataForDownload_ = new Ext.form.Checkbox({
-                name : 'O_download_',
+                name : 'O_download',
                 id : 'o_download',
                 boxLabel : OpenLayers.i18n('Data for download'),
                 renderTo : "ck2"
@@ -169,77 +201,43 @@ GeoNetwork.searchApp = function() {
                         'search');
             });
 
-            var noDirectDownload = new Ext.form.Checkbox({
-                name : 'O_nodynamicdownload',
-                id : 'E_nodynamicdownload',
+            var myMetadata = new Ext.form.Checkbox({
+                name : 'mymetadata',
+                id : 'mymetadata_placeholder',
                 hidden : true
             });
 
-            var noDirectDownload_ = new Ext.form.Checkbox({
-                name : 'O_nodynamicdownload_',
-                id : 'o_nodynamicdownload',
-                boxLabel : OpenLayers.i18n('No direct download'),
-                renderTo : "ck3",
-                hidden: true
+            var myMetadata_ = new Ext.form.Checkbox({
+								name : 'mymetadata',
+                id : 'mymetadata',
+                boxLabel : OpenLayers.i18n('My Metadata'),
+                renderTo : "ck3"
             });
 
-            noDirectDownload_.on("check", function(el) {
-                Ext.getCmp('E_nodynamicdownload').setValue(this.getValue());
-                Ext.getCmp('advanced-search-options-content-form').fireEvent(
-                        'search');
+            myMetadata_.on("check", function(el) {
+								if (Ext.getCmp('mymetadata').getValue()) {
+                	Ext.getCmp('E__owner').setValue(catalogue.identifiedUser.id);
+								} else {
+                	Ext.getCmp('E__owner').setValue('');
+								}
+                Ext.getCmp('advanced-search-options-content-form').fireEvent('search');
             });
 
-            // Multi select keyword
-            var themekeyStore = new GeoNetwork.data.OpenSearchSuggestionStore({
-                url : catalogue.services.opensearchSuggest,
-                rootId : 1,
-                baseParams : {
-                    field : 'keyword'
-                }
-            });
-
-            var themekeyField = new Ext.ux.form.SuperBoxSelect({
-                hideLabel : false,
-                minChars : 0,
-                queryParam : 'q',
-                hideTrigger : false,
-                id : 'E_themekey',
-                name : 'E_themekey',
-                store : themekeyStore,
-                valueField : 'value',
-                displayField : 'value',
-                valueDelimiter : ' or ',
-                // tpl: tpl,
-                fieldLabel : OpenLayers.i18n('keyword')
-            });
-
-            var orgNameStore = new GeoNetwork.data.OpenSearchSuggestionStore({
-                url : catalogue.services.opensearchSuggest,
-                rootId : 1,
-                baseParams : {
-                    field : 'orgName'
-                }
-            });
-
-            var orgNameField = new Ext.ux.form.SuperBoxSelect({
-                hideLabel : false,
-                minChars : 0,
-                queryParam : 'q',
-                hideTrigger : false,
-                id : 'E_orgName',
-                name : 'E_orgName',
-                store : orgNameStore,
-                valueField : 'value',
-                displayField : 'value',
-                valueDelimiter : ' or ',
-                // tpl: tpl,
-                fieldLabel : OpenLayers.i18n('org')
+						// set by mymetadata checkbox
+            var ownerField = new Ext.form.TextField({
+                id : 'E__owner',
+                name : 'E__owner',
+                hidden : true
             });
 
         		var catalogueField = GeoNetwork.util.SearchFormTools.getCatalogueField(
                 		catalogue.services.getSources, catalogue.services.logoUrl, true);
         		var groupField = GeoNetwork.util.SearchFormTools.getGroupField(
                 		catalogue.services.getGroups, true);
+        		var ownerGroupField = GeoNetwork.util.SearchFormTools.getOwnerGroupField(
+                		catalogue.services.getGroups, true);
+        		var ownedByField = GeoNetwork.util.SearchFormTools.getOwnedByField(
+                		catalogue.services.getUsers, true);
         		var statusField = GeoNetwork.util.SearchFormTools.getStatusField(
                 		catalogue.services.getStatus, true);
         		var metadataTypeField = GeoNetwork.util.SearchFormTools
@@ -252,28 +250,19 @@ GeoNetwork.searchApp = function() {
         		var denominatorField = GeoNetwork.util.SearchFormTools
                 		.getScaleDenominatorField(true);
 
-            // Add hidden fields to be use by quick metadata links from the
-            // admin panel (eg. my metadata).
-            var ownerField = new Ext.form.TextField({
-                name : 'E__owner',
-                hidden : true
-            });
-            var isHarvestedField = new Ext.form.TextField({
-                name : 'E__isHarvested',
-                hidden : true
-            });
-            var siteId = new Ext.form.TextField({
-                name : 'E_siteId',
-                hidden : true
+            var hitsPerPage = new Ext.form.TextField({
+                name : 'E_hitsperpage',
+                hidden : true,
+								value: GeoNetwork.Settings.HITSPERPAGE
             });
 						var serviceTypeField = GeoNetwork.util.INSPIRESearchFormTools
 						    .getServiceTypeField(true);
 
-						// Leave out themekeyField and orgNameField - handled elsewhere
             advancedCriteria.push(
-										catalogueField, groupField, statusField, metadataTypeField, 
-										categoryField, validField, spatialTypes, denominatorField,
-                    ownerField, isHarvestedField, siteId);
+										categoryField, statusField, groupField, ownedByField,
+										ownerGroupField, metadataTypeField, catalogueField,
+										validField, spatialTypes, denominatorField,
+                    ownerField, hitsPerPage);
 
             var sortByCombo = new Ext.form.TextField({
                 name : 'E_sortBy',
@@ -296,7 +285,7 @@ GeoNetwork.searchApp = function() {
                     anchor : '100%'
                 },
                 forceLayout : true,
-                items : [ any, onlineData, dataForDownload, noDirectDownload,
+                items : [ any, onlineData, dataForDownload, myMetadata,
                         sortByCombo, orderBy, advancedCriteria ]
             };
 
@@ -338,6 +327,7 @@ GeoNetwork.searchApp = function() {
                 items : GeoNetwork.util.SearchFormTools.getWhen()
             };
 
+						/*
             var inspireFields = GeoNetwork.util.INSPIRESearchFormTools
                     .getINSPIREFields(catalogue.services, true, {
                         withAnnex : true,
@@ -359,6 +349,7 @@ GeoNetwork.searchApp = function() {
                 hidden: true // NOTE: Added to anzmest to prevent INSPIRE from
                              // appearing
             };
+						*/
 
             var formItems = [];
 
@@ -370,7 +361,6 @@ GeoNetwork.searchApp = function() {
                 items:[
                    // MarLIN panel
                    {
-                      title:'Keyword Selectors',
                       margins:'5 5 5 5',
                       layout:'form',
                       autoHeight: true,
@@ -394,12 +384,14 @@ GeoNetwork.searchApp = function() {
                               anchor : '100%'
                           },
                           border : false,
-                          items : [ what, inspire ]
+                          items : [ what /*, inspire */ ]
                       }, where, when ]
                    }]
             });
 
-            this.setAdminFieldsCallback([ groupField ]);
+            this.setAdminFieldsCallback([ groupField, ownedByField, ownerGroupField ]);
+            this.setRegisteredUserFieldsOnlyCallback([ myMetadata_ ]);
+            this.setRegisteredUserFieldsCallback([ statusField ]);
 
             return new GeoNetwork.SearchFormPanel({
                 id : 'advanced-search-options-content-form',
@@ -483,7 +475,7 @@ GeoNetwork.searchApp = function() {
                 id : 'previousBtFooter',
                 text : '&lt;&lt;',
                 handler : function() {
-                    var from = catalogue.startRecord - 50;
+                    var from = catalogue.startRecord - GeoNetwork.Settings.HITSPERPAGE;
                     if (from > 0) {
                         catalogue.startRecord = from;
                         catalogue.search(
@@ -499,7 +491,7 @@ GeoNetwork.searchApp = function() {
                 id : 'nextBtFooter',
                 text : '&gt;&gt;',
                 handler : function() {
-                    catalogue.startRecord += 50;
+                    catalogue.startRecord += GeoNetwork.Settings.HITSPERPAGE;
                     catalogue.search('advanced-search-options-content-form',
                             app.searchApp.loadResults, null,
                             catalogue.startRecord, true);
@@ -562,7 +554,7 @@ GeoNetwork.searchApp = function() {
 
             // Add handlers for the pagination buttons in the top bar
             Ext.getCmp('previousBt').on('click', function() {
-                var from = catalogue.startRecord - 50;
+                var from = catalogue.startRecord - GeoNetwork.Settings.HITSPERPAGE;
                 if (from > 0) {
                     catalogue.startRecord = from;
                     catalogue.search(
@@ -573,7 +565,7 @@ GeoNetwork.searchApp = function() {
             });
 
             Ext.getCmp('nextBt').on('click', function() {
-                catalogue.startRecord += 50;
+                catalogue.startRecord += GeoNetwork.Settings.HITSPERPAGE;
                 catalogue.search('advanced-search-options-content-form',
                     app.searchApp.loadResults, null,
                     catalogue.startRecord, true);
@@ -607,12 +599,12 @@ GeoNetwork.searchApp = function() {
             Ext.getCmp('previousBt').setDisabled(catalogue.startRecord === 1);
             Ext.getCmp('nextBt')
                     .setDisabled(
-                            catalogue.startRecord + 50 > catalogue.metadataStore.totalLength);
+                            catalogue.startRecord + GeoNetwork.Settings.HITSPERPAGE > catalogue.metadataStore.totalLength);
 
             Ext.getCmp('previousBtFooter').setDisabled(catalogue.startRecord === 1);
             Ext.getCmp('nextBtFooter')
                 .setDisabled(
-                    catalogue.startRecord + 50 > catalogue.metadataStore.totalLength);
+                    catalogue.startRecord + GeoNetwork.Settings.HITSPERPAGE > catalogue.metadataStore.totalLength);
 
             Ext.getCmp("infoFooter").update(Ext.getCmp("info").el.dom.textContent
                 || Ext.getCmp("info").el.dom.innerText);

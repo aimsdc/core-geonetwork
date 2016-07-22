@@ -72,12 +72,13 @@
                 value = field.val() || '';
               }
               if (value !== '') {
-                xmlSnippet = xmlSnippet.replace(
-                    '{{' + fieldName + '}}',
+                xmlSnippet = xmlSnippet.replace('{{' + fieldName + '}}',
                     value.replace(/\&/g, '&amp;amp;')
                          .replace(/\"/g, '&quot;'));
                 updated = true;
-              }
+              } else {
+								xmlSnippet = xmlSnippet.replace('{{' + fieldName + '}}', '');
+							}
             });
 
             // Usually when a template field is link to a

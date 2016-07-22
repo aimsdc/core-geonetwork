@@ -31,7 +31,8 @@
         staticMap: 'fa-globe',
         dataset: 'fa-file',
         project: 'fa-clipboard',
-				datasetAgreement: 'fa-check-square-o'
+				datasetAgreement: 'fa-check-square-o',
+				provenanceDocument: 'fa-file'
       };
 
       $scope.$watchCollection('groups', function() {
@@ -112,7 +113,7 @@
                 $scope.mdTypes = types;
 
                 // Select the default one or the first one
-                if (defaultType && $.inArray(defaultType, $scope.mdTypes)) {
+                if (defaultType && $.inArray(defaultType, $scope.mdTypes) > -1) {
                   $scope.getTemplateNamesByType(defaultType);
                 } else if ($scope.mdTypes[0]) {
                   $scope.getTemplateNamesByType($scope.mdTypes[0]);

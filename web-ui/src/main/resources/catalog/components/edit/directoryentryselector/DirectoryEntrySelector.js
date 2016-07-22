@@ -34,6 +34,11 @@
              elementName: '@',
              elementRef: '@',
              domId: '@',
+						 // If elementChoice is set to 'true' then we are displaying 
+						 // this directory selector next to a choice button which has been
+						 // constructed by the form-builder so templateAddAction is ignored
+						 // and we use a different template - see getTemplateUrl below
+						 elementChoice: '@',
              // Contact subtemplates allows definition
              // of the contact role. For other cases
              // only add action is provided
@@ -49,9 +54,7 @@
              // into the metadata records.
              variables: '@'
            },
-           templateUrl: '../../catalog/components/edit/' +
-           'directoryentryselector/partials/' +
-           'directoryentryselector.html',
+					 template: '<div ng-include="getTemplateUrl()"></div>',
            link: function(scope, element, attrs) {
              // Separator between each contact XML
              // snippet
@@ -64,11 +67,20 @@
              scope.isContact = scope.templateType === 'contact';
              scope.hasDynamicVariable = scope.variables &&
              scope.variables.match('{.*}') !== null;
-             scope.subtemplateFilter = '';
+             scope.params = '';
+
+						 // return template according to choice setting
+						 scope.getTemplateUrl = function() {
+						 		if (scope.elementChoice == 'true') {
+           				return '../../catalog/components/edit/directoryentryselector/partials/directoryentryselectorchoice.html';
+								} else {
+							    return '../../catalog/components/edit/directoryentryselector/partials/directoryentryselector.html';
+							  }
+						 },
 
              // Search only for contact subtemplate
              // by default.
-             scope.subtemplateFilter = {
+             scope.params = {
                _isTemplate: 's',
                any: '',
                _root: 'gmd:CI_ResponsibleParty',
@@ -77,7 +89,7 @@
                //resultType: 'subtemplates'
              };
              if (scope.filter) {
-               angular.extend(scope.subtemplateFilter,
+               angular.extend(scope.params,
                angular.fromJson(scope.filter));
              }
 
@@ -86,7 +98,7 @@
              buildXMLFieldName(scope.elementRef, scope.elementName);
 
              scope.getEntries = function() {
-               scope.$broadcast('resetSearch', scope.subtemplateFilter);
+               scope.$broadcast('resetSearch', scope.params);
              };
 
              scope.add = function() {

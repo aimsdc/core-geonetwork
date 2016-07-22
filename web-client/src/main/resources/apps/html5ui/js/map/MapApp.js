@@ -118,6 +118,45 @@ GeoNetwork.mapApp = function() {
         });
     };
 
+		/**
+		 * Check when nationalmap becomes available (groups and subgroups)
+		 */
+		function whenNMAvailable(callback) {
+			var interval = 100; // ms
+			setTimeout(function() {
+				if ((window.nmObjects === undefined)
+				 || (window.nmObjects.nmApplicationViewModel === undefined)
+				 || (window.nmObjects.nmApplicationViewModel.catalog === undefined)
+				 || (window.nmObjects.nmApplicationViewModel.catalog.group === undefined)
+				 || (window.nmObjects.nmApplicationViewModel.catalog.group.isLoading === true)) {
+					//console.log("Not available");
+					setTimeout(function() {
+						whenNMAvailable(callback)
+					}, interval);
+				} else {
+					var topLevelGroup = window.nmObjects.nmApplicationViewModel.catalog.group;
+					var national = topLevelGroup.findFirstItemByName('GeoNetwork Data Sets');
+					if (national === undefined) {
+						//console.log("Not available");
+						setTimeout(function() {
+							whenNMAvailable(callback)
+						}, interval);
+					} else {
+						var gnGroup = national.findFirstItemByName('WMS Layers');
+						if (gnGroup === undefined) {
+							//console.log("Not available");
+							setTimeout(function() {
+								whenNMAvailable(callback)
+							}, interval);
+						} else {
+							//console.log("Available at last");
+							callback();
+						}
+					}
+				}
+			}, interval);
+		}
+
     // public space:
     return {
         initialize : false,
@@ -142,6 +181,8 @@ GeoNetwork.mapApp = function() {
 						// grab the current national map application view model and get the catalog which
 						// is an instance of CatalogViewModel - see main.js in nationalmap for how 
 						// nmObjects is created
+						whenNMAvailable(function() {
+
 						var nmObjects = window.nmObjects;
 						var catalog = nmObjects.nmApplicationViewModel.catalog;
 						var topLevelGroup = catalog.group;
@@ -159,6 +200,8 @@ GeoNetwork.mapApp = function() {
 							newItem.isShown = true;
 							gnGroup.add(newItem);
 						}
+
+						});
 				},
 
         /**
@@ -181,7 +224,7 @@ GeoNetwork.mapApp = function() {
         },
         maps : [],
         init : function(options, layers, fixedScales) {
-            generateMaps(options, layers, fixedScales);
+            // generateMaps(options, layers, fixedScales);
         },
         /**
          * Used by other functions that need to create and initialize a map
@@ -191,120 +234,7 @@ GeoNetwork.mapApp = function() {
          * @returns
          */
         generateAuxiliaryMap : function(id) {
-
-            var map = new OpenLayers.Map({
-                maxExtent : GeoNetwork.map.MAP_OPTIONS.maxExtent.clone(),
-                projection : GeoNetwork.map.MAP_OPTIONS.projection,
-                resolutions : GeoNetwork.map.MAP_OPTIONS.resolutions,
-                restrictedExtent : GeoNetwork.map.MAP_OPTIONS.restrictedExtent
-                        .clone()
-            });
-
-            Ext.each(GeoNetwork.map.MAP_OPTIONS.controls_, function(control) {
-                if (control) {
-                    map.addControl(new control());
-                }
-            });
-
-            Ext.each(GeoNetwork.map.BACKGROUND_LAYERS, function(layer) {
-                map.addLayer(layer.clone());
-            });
-
-            var scaleLinePanel = new Ext.Panel({
-                cls : 'olControlScaleLine overlay-element overlay-scaleline',
-                border : false
-            });
-
-            scaleLinePanel.on('render', function() {
-                var scaleLine = new OpenLayers.Control.ScaleLine({
-                    div : scaleLinePanel.body.dom
-                });
-
-                map.addControl(scaleLine);
-                scaleLine.activate();
-            }, this);
-
-            var zoomStore;
-
-            var fixedScales = GeoNetwork.map.MAP_OPTIONS.resolutions;
-
-            if (fixedScales && fixedScales.length > 0) {
-                var zooms = [];
-                var scales = fixedScales;
-                var units = map.baseLayer.units;
-
-                for ( var i = scales.length - 1; i >= 0; i--) {
-                    var scale = scales[i];
-                    zooms.push({
-                        level : i,
-                        resolution : OpenLayers.Util.getResolutionFromScale(
-                                scale, units),
-                        scale : scale
-                    });
-                }
-
-                zoomStore = new GeoExt.data.ScaleStore({});
-                zoomStore.loadData(zooms);
-
-            } else {
-                zoomStore = new GeoExt.data.ScaleStore({
-                    map : map
-                });
-            }
-            var zoomSelector = new Ext.form.ComboBox(
-                    {
-                        emptyText : 'Zoom level',
-                        tpl : '<tpl for="."><div class="x-combo-list-item">1 : {[parseInt(values.scale)]}</div></tpl>',
-                        editable : false,
-                        triggerAction : 'all',
-                        mode : 'local',
-                        store : zoomStore,
-                        width : 110
-                    });
-
-            zoomSelector.on('click', function(evt) {
-                evt.stopEvent();
-            });
-            zoomSelector.on('mousedown', function(evt) {
-                evt.stopEvent();
-            });
-
-            zoomSelector.on('select', function(combo, record, index) {
-                map.zoomTo(record.data.level);
-            }, this);
-
-            var zoomSelectorWrapper = new Ext.Panel({
-                items : [ zoomSelector ],
-                cls : 'overlay-element overlay-scalechooser',
-                border : false
-            });
-
-            var mapOverlay = new Ext.Panel({
-                // title: "Overlay",
-                cls : 'map-overlay',
-                items : [ scaleLinePanel, zoomSelectorWrapper ]
-            });
-
-            mapOverlay.on("afterlayout", function() {
-                scaleLinePanel.body.dom.style.position = 'relative';
-                scaleLinePanel.body.dom.style.display = 'inline';
-
-                mapOverlay.getEl().on("click", function(x) {
-                    x.stopEvent();
-                });
-                mapOverlay.getEl().on("mousedown", function(x) {
-                    x.stopEvent();
-                });
-            }, this);
-
-            var panel = new GeoExt.MapPanel({
-                height : 400,
-                map : map,
-                renderTo : id
-            });
-
-            return map;
-
+				  // do nothing as we don't have an auxillary map with nationalmap and it slows search
         },
         /**
          * 

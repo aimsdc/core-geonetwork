@@ -28,6 +28,7 @@ import jeeves.interfaces.Logger;
 import jeeves.resources.dbms.Dbms;
 import jeeves.server.context.ServiceContext;
 import jeeves.utils.Xml;
+import jeeves.xlink.Processor;
 
 import org.fao.geonet.GeonetContext;
 import org.fao.geonet.constants.Geonet;
@@ -302,6 +303,7 @@ public class FragmentHarvester extends BaseAligner{
 	    } else {
 	    	createOrUpdateSubtemplate(fragment);
 	    }
+
 	}
 	    
 	//---------------------------------------------------------------------------
@@ -322,13 +324,17 @@ public class FragmentHarvester extends BaseAligner{
 		
 		Element md = (Element) fragment.getChildren().get(0);
 
+		String reference = metadataGetService+"?uuid="+uuid;
 		String id = dataMan.getMetadataId(dbms, uuid);
 		if (id == null) {
 			createSubtemplate(schema, md, uuid, title);
 		} else {
 			updateSubtemplate(id, uuid, md, title);
+			Processor.uncacheXLinkUri(reference);
 		}
 
+    // Now shove the subtemplate into the xlink cache so it is ready for use
+		Processor.addXLinkToCache(reference, md);
 	}
 
 	//---------------------------------------------------------------------------
@@ -412,6 +418,7 @@ public class FragmentHarvester extends BaseAligner{
 			Object ob = iter.next();
 			if (ob instanceof Element) {
 				Element elem = (Element)ob;
+				log.debug("Processing element "+Xml.getString(elem));
 
 	 	    if (fragment.getName().equals(REPLACEMENT_GROUP)) {
  					Element parent = elem.getParentElement();

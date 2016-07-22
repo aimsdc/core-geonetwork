@@ -39,11 +39,16 @@ GeoNetwork.app = function() {
         latestStore.on('load', function() {
             Ext.ux.Lightbox.register('a[rel^=lightbox]');
         });
+
+				var oldp = Ext.getCmp('latest-md-panel');
+				if (oldp) oldp.removeAll();
+
         var p = new Ext.Panel({
             border : false,
             bodyCssClass : 'md-view',
             items : latestView,
-            renderTo : 'latest-metadata'
+            renderTo : 'latest-metadata',
+						id: 'latest-md-panel'
         });
         latestView.tpl = GeoNetwork.HTML5UI.Templates.THUMBNAIL_SIMPLER;
         catalogue.kvpSearch(
@@ -57,12 +62,16 @@ GeoNetwork.app = function() {
     };
 
     function createMainTagCloud() {
-        var tagCloudView = new GeoNetwork.TagCloudView({
+
+        var tagCloudView = Ext.getCmp('cloud-tag-widget');
+				if (!tagCloudView) {
+					tagCloudView = new GeoNetwork.TagCloudView({
             catalogue : catalogue,
             query : 'fast=true&summaryOnly=true&from=1&to=4',
             renderTo : 'cloud-tag',
             onSuccess : 'app.loadResults',
             itemSelector : 'div.tag-cloud',
+						id: 'cloud-tag-widget',
             tpl: new Ext.XTemplate(
                     '<tpl for=".">', 
                         '<div class="tag-cloud">',
@@ -71,11 +80,14 @@ GeoNetwork.app = function() {
                                 '={value}\', app.loadResults, null, null);app.searchApp.firstSearch=true;showSearch();" alt="{value}">{value} ({count})</a>', 
                         '</div>', 
                     '</tpl>')
-        });
+        	});
+				} else {
+					tagCloudView.initComponent();
+				}
 
         return tagCloudView;
-    }
-    ;
+    };
+
     var createPopularUpdate = function() {
         var latestView = new GeoNetwork.MetadataResultsView({
             catalogue : catalogue,
@@ -87,11 +99,16 @@ GeoNetwork.app = function() {
         latestStore.on('load', function() {
             Ext.ux.Lightbox.register('a[rel^=lightbox]');
         });
+
+				var oldp = Ext.getCmp('popular-md-panel');
+				if (oldp) oldp.removeAll();
+
         var p = new Ext.Panel({
             border : false,
             bodyCssClass : 'md-view',
             items : latestView,
-            renderTo : 'popular-metadata'
+            renderTo : 'popular-metadata',
+						id: 'popular-md-panel'
         });
         latestView.tpl = GeoNetwork.HTML5UI.Templates.THUMBNAIL_SIMPLER;
         catalogue.kvpSearch(
@@ -102,116 +119,6 @@ GeoNetwork.app = function() {
                         hide(el);
                     });
                 }, null, null, true, latestView.getStore());
-    };
-
-    /**
-     * 
-     * Given a metadata, load a map on the metadata associated map and creates
-     * the checkbox for downloading or adding layers to the big map
-     * 
-     */
-    var loadMetadataMap = function(metadata) {
-
-        var checkboxes = [];
-        var layers = [];
-
-        // add data to map
-        Ext.each(metadata.record.get("links"), function(link) {
-            if (link.protocol === 'application/vnd.ogc.wms_xml'
-                    || link.protocol.toUpperCase().indexOf("OGC:WMS") >= 0) {
-                var layers = app.mapApp.getCapabilitiesWMS(link.href);
-                Ext.each(layers, function(layer) {
-                    var wms = new OpenLayers.Layer.WMS(link.name, link.href, {
-                        layers : layer,
-                        transparent : true
-                    });
-
-                    wms.setVisibility(true);
-
-                    checkboxes.push(new Ext.form.Checkbox({
-                        boxLabel : layer,
-                        layer : wms
-                    }));
-
-                    layers.push(wms);
-                });
-            } else if (link.protocol === 'application/vnd.ogc.wfs_xml'
-                    || link.protocol.toUpperCase().indexOf("OGC:WFS") >= 0) {
-                var layers = [];
-                try {
-                    layers = app.mapApp.getCapabilitiesWFS(link.href);
-                } catch (ex) {
-                    layers = [];
-                }
-                var styleMap = new OpenLayers.StyleMap({
-                    strokeWidth : 3,
-                    strokeColor : "#333333"
-                });
-                var strategies = [ new OpenLayers.Strategy.BBOX() ];
-
-                Ext.each(layers, function(layer) {
-                    var wfs = new OpenLayers.Layer.Vector(link.name, {
-                        strategies : strategies,
-                        protocol : layer,
-                        styleMap : styleMap
-                    });
-                    wfs.setVisibility(true);
-
-                    checkboxes.push(new Ext.form.Checkbox({
-                        boxLabel : layer.featurePrefix + ":"
-                                + layer.geometryName,
-                        layer : wfs
-                    }));
-
-                    layers.push(wfs);
-                });
-            }
-        });
-
-        var wfs_href = metadata.record.get("href");
-
-        // var form = new Ext.form.FormPanel(
-        // {
-        // renderTo : "download_" + metadata.title,
-        // defaultType : 'checkboxgroup',
-        // buttonAlign : 'left',
-        // width : 200,
-        // layout : 'column',
-        // items : [ checkboxes ],
-        // fbar : {
-        // xtype : 'toolbar',
-        // items : [
-        // {
-        // text : OpenLayers.i18n('Add to map'),
-        // handler : function() {
-        // form.items
-        // .each(function(c) {
-        // if (c.checked && !c.added) {
-        // c.added = true;
-        // app.mapApp
-        // .createLayer(c.layer);
-        // }
-        // });
-        // }
-        // },
-        // {
-        // text : OpenLayers.i18n('prepareDownload'),
-        // handler : function() {
-        // // FIXME : this call require the
-        // // catalogue to be named
-        // // catalogue
-        // catalogue
-        // .metadataPrepareDownload(metadata.record
-        // .get('id'));
-        // }
-        // } ]
-        // }
-        // });
-        var map = app.mapApp.generateAuxiliaryMap("map_" + metadata.title);
-        Ext.each(layers, function(layer) {
-            map.addLayer(layer);
-        });
-
     };
 
     /**
@@ -256,7 +163,7 @@ GeoNetwork.app = function() {
         });
     };
 
-    function edit(metadataId, create, group, child) {
+    function editMetadata(metadataId, create, group, child) {
 
         Ext.getCmp('metadata-panel') && Ext.getCmp('metadata-panel').destroy();
         var editorPanel = new GeoNetwork.editor.EditorPanel({
@@ -288,7 +195,16 @@ GeoNetwork.app = function() {
         });
     }
 
-    function show(uuid, record, url, maximized, width, height, clean) {
+    // Function supplied to Catalog to be called when metadata in viewer is edited
+    function showRefreshButtonHideMetadata() {
+				show('metadata-refresh-button');
+				hide('metadata-info');
+		}
+
+    function viewMetadata(uuid, record, url, maximized, width, height, clean) {
+
+
+    	var viewMetadataFn = function(uuid, record, url, maximized, width, height, clean) {
 
         Ext.get("metadata-info").update("");
 
@@ -313,7 +229,8 @@ GeoNetwork.app = function() {
             record : record,
             buttonWidth : button_width,
             buttonHeight : button_height,
-						viewPanelButtonCSS: GeoNetwork.Settings.viewPanelButtonCSS
+						viewPanelButtonCSS: GeoNetwork.Settings.viewPanelButtonCSS,
+						scrapViewSimple: (GeoNetwork.defaultViewMode !== 'view-simple')
         });
 
 				aResTab.on({
@@ -324,14 +241,6 @@ GeoNetwork.app = function() {
 						hide("permalink-div");
 					}
 				});
-
-        // aResTab.on("afterrender", function() {
-        // // Initialize map and links
-        // loadMetadataMap({
-        // record : record,
-        // title : record.get('title')
-        // });
-        // });
 
         showMetadata();
         app.breadcrumb.setDefaultPrevious(2);
@@ -363,7 +272,7 @@ GeoNetwork.app = function() {
             }
         });
 
-        token = "|" + uuid;
+        token = "!" + uuid;
 
         if (!GeoNetwork.state.History.getToken()
                 || GeoNetwork.state.History.getToken().indexOf("edit=") != 0) {
@@ -461,93 +370,25 @@ GeoNetwork.app = function() {
         });
 
         Ext.getCmp("metadata-panel").doLayout();
-        // Add to recent viewed
-        addToRecentViewed(record);
+        hide('metadata-refresh-button');
+        show('metadata-info');
 
-    }
+    	};
 
-    function addToRecentViewed(record) {
-        var div = Ext.getCmp("recent-viewed");
+      Ext.get("metadata-refresh-button").update("");
+			var fileBtn =  new Ext.Button({
+			    text    : 'Refresh this record',
+					renderTo: 'metadata-refresh-button',
+			    listeners: {
+						click: function() {
+						  viewMetadataFn(uuid, record, url, maximized, width, height, clean);
+					  }
+					}
+		  });
 
-        if (!div) {
-            var store = new Ext.data.ArrayStore({
-                autoDestroy : true,
-                autoSave : true,
-                storeId : 'recent-viewed-store',
-                idIndex : 0,
-                fields : [ 'thumbnail', 'description', 'uuid', 'title' ]
-            });
+			viewMetadataFn(uuid, record, url, maximized, width, height, clean);
 
-            var tpl = new Ext.XTemplate(
-                  '<tpl for=".">',
-                    '<div class="thumb-wrap" id="recent-viewed_{uuid}">',
-                      '<a href="javascript:app.searchApp.addMetadata(\'{uuid}\', true);">',
-                        //'<div class="thumb">',
-                          '<h1>{title}</h1>',
-                          //'<span>{description}</span>', 
-                        //'</div>',
-                      '</a>', 
-                    '</div>',
-                  '</tpl>');
-
-            div = new Ext.DataView({
-                store : store,
-                tpl : tpl,
-                autoHeight : true,
-                overClass : 'x-view-over',
-                id : "recent-viewed",
-								emptyText: 'No metadata viewed/edited recently'
-            });
-
-						var p = new Ext.Panel({
-            	border : false,
-            	bodyCssClass : 'md-view',
-            	items : div,
-							renderTo: "recent-viewed-div",
-							id: "recent-items-panel"
-        		});
-
-            catalogue.on('afterLogout', function() {
-              store.removeAll(); // empty store underlying dataview
-            });
-        }
-
-        var description = record.get('abstract');
-        if (description.length > 140) {
-            description = description.substring(0, 140) + "...";
-        }
-
-        var alreadyThere = false;
-
-        Ext.each(div.store.data.items, function(e) {
-            if (e.data.uuid === record.get('uuid')) {
-								// just in case any info changed, then update
-								e.beginEdit();
-								e.data.title = record.get('title'); 
-                e.data.thumbnail = record.get('thumbnail'),
-								e.data.description = description; 
-                alreadyThere = true;
-								e.endEdit();
-								e.commit(true);
-            }
-        });
-
-        if (!alreadyThere) {
-            div.store.insert(0, new div.store.recordType({
-                title : record.get('title'),
-                uuid : record.get('uuid'),
-                thumbnail : record.get('thumbnail'),
-                description : description
-            }));
-        } else {
-					div.refresh(); // store may have been updated above
-				}
-
-        while (div.store.data.length > 5) {
-            div.store.remove(div.store.data.items[div.store.data.length - 1]);
-        }
-
-    }
+		}
 
     // public space:
     return {
@@ -555,6 +396,11 @@ GeoNetwork.app = function() {
         searchApp : null,
         loginApp : null,
         breadcrumb : null,
+				rebuildBrowse: function() {
+            createLatestUpdate();
+            createPopularUpdate();
+            createMainTagCloud();
+				},
         switchMode : function(i, j) {
         },
         /**
@@ -624,8 +470,9 @@ GeoNetwork.app = function() {
                                 .MetadataCSWResultsStore(),
                         summaryStore : GeoNetwork.data.MetadataSummaryStore(),
                         editMode : 2,
-                        metadataEditFn : edit,
-                        metadataShowFn : show
+                        metadataEditFn : editMetadata,
+                        metadataEditFnCallback : showRefreshButtonHideMetadata,
+                        metadataShowFn : viewMetadata
                     });
 
             // Make sure we are still logged in:
@@ -651,10 +498,6 @@ GeoNetwork.app = function() {
                     .setProvider(new GeoNetwork.state.PermalinkProvider({
                         encodeType : false
                     }));
-
-            createLatestUpdate();
-            createPopularUpdate();
-            createMainTagCloud();
 
             this.breadcrumb = GeoNetwork.BreadCrumb();
             this.breadcrumb.setCurrent(this.breadcrumb.defaultSteps[0]);
@@ -691,7 +534,7 @@ GeoNetwork.app = function() {
             }
         },
         edit : function(uuid) {
-            edit(uuid);
+            editMetadata(uuid);
         },
         switchMode : function() {
             // Deprecated
@@ -823,13 +666,19 @@ Ext.onReady(function() {
                 Ext.getCmp('advanced-search-options-content-form').fireEvent(
                         'search');
             };
+
+						var mdPanel = Ext.getCmp('metadata-panel');
+						if (mdPanel && mdPanel.isVisible()) {
+							console.log("Will show metadata view");
+						} else {
+							showSearch();
+						}
 });
 
 /**
  * Resize maps and panels on window resize to acomodate content
  */
 Ext.fly(window).on('resize', function(e, w) {
-    resizeMap();
     resizeResultsPanel();
 
     var doLayout_children = function(obj) {

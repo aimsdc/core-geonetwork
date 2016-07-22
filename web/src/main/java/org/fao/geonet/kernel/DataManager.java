@@ -71,6 +71,9 @@ import org.jdom.JDOMException;
 import org.jdom.Namespace;
 import org.jdom.filter.ElementFilter;
 
+import jeeves.server.dispatchers.guiservices.XmlFile;
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -1052,6 +1055,9 @@ public class DataManager {
         	title       = Xml.transform(md, styleSheet).getText().trim();
 	        //--- needed to detach md from the document
  	       	md.detach();
+				} else {
+					title = md.getAttributeValue("title");
+					md.removeAttribute("title");
 				}
 
 				if(Log.isDebugEnabled(Geonet.DATA_MANAGER))
@@ -1323,6 +1329,7 @@ public class DataManager {
         else {
             dbms.execute("UPDATE Metadata SET isHarvested=?, harvestUuid=? WHERE id=?", value, harvestUuid, id);
         }
+				setStatusHarvestedExt(dbms, id);
     }
 
     /**
@@ -1338,6 +1345,7 @@ public class DataManager {
         String value = (harvestUuid != null) ? "y" : "n";
         String query = "UPDATE Metadata SET isHarvested=?, harvestUuid=?, harvestUri=? WHERE id=?";
         dbms.execute(query, value, harvestUuid, harvestUri, id);
+				setStatusHarvestedExt(dbms, id);
     }
 
     /**
@@ -1349,7 +1357,7 @@ public class DataManager {
         String protocol = settingMan.getValue(Geonet.Settings.SERVER_PROTOCOL);
         String host    = settingMan.getValue(Geonet.Settings.SERVER_HOST);
         String port    = settingMan.getValue(Geonet.Settings.SERVER_PORT);
-        String locServ = baseURL +"/"+ Jeeves.Prefix.SERVICE +"/en";
+        String locServ = baseURL +"/"+ Jeeves.Prefix.SERVICE +"/eng";
 
         return protocol + "://" + host + (port.equals("80") ? "" : ":" + port) + locServ;
     }
@@ -1511,7 +1519,8 @@ public class DataManager {
         // Update fixed info for metadata record only, not for subtemplates
         Element xml = Xml.loadString(data, false);
         if (!isTemplate.equals("s")) {
-            xml = updateFixedInfo(schema, Integer.toString(serial), uuid, xml, parentUuid, DataManager.UpdateDatestamp.yes, dbms, context);
+					  boolean created = true;
+            xml = updateFixedInfo(schema, Integer.toString(serial), uuid, xml, parentUuid, DataManager.UpdateDatestamp.yes, dbms, context, created);
 
             // the updateFixedInfo may have altered the UUID
             if (schemaMan.getSchema(schema).isReadwriteUUID()) {
@@ -1523,7 +1532,11 @@ public class DataManager {
 
         //--- store metadata
         String id = xmlSerializer.insert(dbms, schema, xml, serial, source, uuid, null, null, isTemplate, title, owner, groupOwner, "", context);
-        copyDefaultPrivForGroup(context, dbms, id, groupOwner, fullRightsForGroup);
+
+				// For MarLIN - newly created records should only be visible to the
+				// owner - the group should not see the record unless the owner
+				// explicitly sets the permissions for them
+        //copyDefaultPrivForGroup(context, dbms, id, groupOwner, fullRightsForGroup);
 
         //--- store metadata categories copying them from the template
         List categList = dbms.select("SELECT categoryId FROM MetadataCateg WHERE metadataId = ?",iTemplateId).getChildren();
@@ -1573,7 +1586,8 @@ public class DataManager {
 
         if (ufo && "n".equals(isTemplate)) {
             String parentUuid = null;
-            metadata = updateFixedInfo(schema, id$, uuid, metadata, parentUuid, DataManager.UpdateDatestamp.no, dbms, context);
+					  boolean created = false;
+            metadata = updateFixedInfo(schema, id$, uuid, metadata, parentUuid, DataManager.UpdateDatestamp.no, dbms, context, created);
         }
 
         if (source == null) {
@@ -1590,7 +1604,11 @@ public class DataManager {
         //--- store metadata
         xmlSerializer.insert(dbms, schema, metadata, id, source, uuid, createDate, changeDate, isTemplate, title, owner, group, docType, context);
 
-        copyDefaultPrivForGroup(context, dbms, id$, group, false);
+        if (isTemplate.equals("s")) { // set view permissions on subtemplates - available to everyone
+          setOperation(context, dbms, id+"", "1", AccessManager.OPER_VIEW);
+        } else {
+          copyDefaultPrivForGroup(context, dbms, id$, group, false);
+        }
 
         if (category != null) {
             setCategory(context, dbms, id$, category);
@@ -1840,7 +1858,8 @@ public class DataManager {
         String schema = getMetadataSchema(dbms, id);
         if(ufo) {
             String parentUuid = null;
-            md = updateFixedInfo(schema, id, null, md, parentUuid, (updateDateStamp ? DataManager.UpdateDatestamp.yes : DataManager.UpdateDatestamp.no), dbms, context);
+					  boolean created = false;
+            md = updateFixedInfo(schema, id, null, md, parentUuid, (updateDateStamp ? DataManager.UpdateDatestamp.yes : DataManager.UpdateDatestamp.no), dbms, context, created);
         }
 
         //--- force namespace prefix for iso19139 metadata
@@ -2722,6 +2741,20 @@ public class DataManager {
         }
     }
 
+    /**
+     * Set status of harvested metadata to APPROVED
+     *
+     * @param dbms
+     * @param id
+     * @throws Exception
+		 */
+    private void setStatusHarvestedExt(Dbms dbms, int id) throws Exception {
+				int userId = 1; // admin user
+				String changeDate = new ISODate().toString(), changeMessage = "Harvested";
+				int status = Integer.valueOf(Params.Status.APPROVED);
+        dbms.execute("INSERT into MetadataStatus(metadataId, statusId, userId, changeDate, changeMessage) VALUES (?,?,?,?,?)", id, status, userId, changeDate, changeMessage);
+		}
+
     //--------------------------------------------------------------------------
     //---
     //--- Categories API
@@ -2801,7 +2834,7 @@ public class DataManager {
      * @return
      * @throws Exception
      */
-    public Element updateFixedInfo(String schema, String id, String uuid, Element md, String parentUuid, UpdateDatestamp updateDatestamp, Dbms dbms, ServiceContext context) throws Exception {
+    public Element updateFixedInfo(String schema, String id, String uuid, Element md, String parentUuid, UpdateDatestamp updateDatestamp, Dbms dbms, ServiceContext context, boolean created) throws Exception {
         boolean autoFixing = settingMan.getValueAsBool("system/autofixing/enable", true);
         if(autoFixing) {
             if(Log.isDebugEnabled(Geonet.DATA_MANAGER))
@@ -2833,6 +2866,11 @@ public class DataManager {
 								}
                 env.addContent(schemaLoc);
 
+                Log.debug(Geonet.DATA_MANAGER, "update-fixed-info created is "+created);
+                if (created) {
+                    env.addContent(new Element("created").setText(new ISODate().toString()));
+                }
+
                 if (updateDatestamp == UpdateDatestamp.yes) {
                     env.addContent(new Element("changeDate").setText(new ISODate().toString()));
                 }
@@ -2841,14 +2879,50 @@ public class DataManager {
                 }
                 env.addContent(new Element("datadir").setText(Lib.resource.getDir(dataDir, Params.Access.PRIVATE, id)));
 
+								// add user information to env if user is authenticated (should be)
+								Element user = new Element("user");
+								UserSession usrSess = context.getUserSession();
+                if (usrSess.isAuthenticated()) {
+               		String myUserId  = usrSess.getUserId(); 
+									Element elUser = dbms.select("SELECT * FROM Users WHERE id=?", Integer.valueOf(myUserId));
+									elUser.setName("details");
+									user.addContent(elUser);
+								}
+								env.addContent(user);
+
+								// some more stuff to add to env
+                env.addContent(new Element("siteURL")   .setText(getSiteURL()));
+                Element system = settingMan.get("system", -1);
+                env.addContent(Xml.transform(system, appPath + Geonet.Path.STYLESHEETS+ "/xml/config.xsl"));
+
+								// add schema information to env
+								Element schemas = new Element("schemas");
+    						for(String aSchema : schemaMan.getSchemas()) {
+      						try {
+        						Map<String, XmlFile> schemaInfo = schemaMan.getSchemaInfo(aSchema);
+       						 
+        						for (Map.Entry<String, XmlFile> entry : schemaInfo.entrySet()) {
+          						XmlFile xf = entry.getValue(); 
+          						String fname = entry.getKey(); 
+          						Element response = xf.exec(new Element("junk"), context);
+          						response.setName(FilenameUtils.removeExtension(fname));
+          						Element schemaElem = new Element(aSchema);
+          						schemaElem.addContent(response);
+          						schemas.addContent(schemaElem);
+        						}
+      						} catch (Exception e) {
+        						context.error("Failed to load schema info for "+aSchema+": "+e.getMessage());
+        						e.printStackTrace();
+      						}
+    						}
+								env.addContent(schemas);
+
                 // add original metadata to result
                 Element result = new Element("root");
                 result.addContent(md);
                 // add 'environment' to result
-                env.addContent(new Element("siteURL")   .setText(getSiteURL()));
-                Element system = settingMan.get("system", -1);
-                env.addContent(Xml.transform(system, appPath + Geonet.Path.STYLESHEETS+ "/xml/config.xsl"));
                 result.addContent(env);
+
                 // apply update-fixed-info.xsl
                 String styleSheet = getSchemaDir(schema) + Geonet.File.UPDATE_FIXED_INFO;
                 result = Xml.transform(result, styleSheet);
@@ -3251,15 +3325,25 @@ public class DataManager {
      */
     public void buildExtraMetadataInfo(ServiceContext context, String id,
                                        Element info) throws Exception {
-        if (accessMan.canEdit(context, id))
+
+				Set<String> hsOper = null;
+
+				boolean isOwner = accessMan.isOwner(context, id);
+				if (isOwner) {
+					hsOper = accessMan.getAllOperationsForOwner();
+          addElement(info, Edit.Info.Elem.OWNER, "true");
+				} else {
+        	Element operations = accessMan.getAllOperations(context, id, context.getIpAddress());
+        	hsOper = accessMan.getOperationsNotOwner(context, id, context.getIpAddress(), operations);
+        	if (!hsOper.contains(AccessManager.OPER_DOWNLOAD)) {
+            boolean gDownload = Xml.selectNodes(operations, "guestoperations/record[operationid="+AccessManager.OPER_DOWNLOAD+" and groupid='-1']").size() == 1;
+            addElement(info, Edit.Info.Elem.GUEST_DOWNLOAD, gDownload+"");
+        	}
+				}
+				
+        if (isOwner || hsOper.contains(AccessManager.OPER_EDITING)) {
             addElement(info, Edit.Info.Elem.EDIT, "true");
-
-        if (accessMan.isOwner(context, id)) {
-            addElement(info, Edit.Info.Elem.OWNER, "true");
-        }
-
-        Element operations = accessMan.getAllOperations(context, id, context.getIpAddress());
-        Set<String> hsOper = accessMan.getOperations(context, id, context.getIpAddress(), operations);
+				}
 
         addElement(info, Edit.Info.Elem.VIEW,     			String.valueOf(hsOper.contains(AccessManager.OPER_VIEW)));
         addElement(info, Edit.Info.Elem.NOTIFY,   			String.valueOf(hsOper.contains(AccessManager.OPER_NOTIFY)));
@@ -3267,10 +3351,6 @@ public class DataManager {
         addElement(info, Edit.Info.Elem.DYNAMIC,  			String.valueOf(hsOper.contains(AccessManager.OPER_DYNAMIC)));
         addElement(info, Edit.Info.Elem.FEATURED, 			String.valueOf(hsOper.contains(AccessManager.OPER_FEATURED)));
 
-        if (!hsOper.contains(AccessManager.OPER_DOWNLOAD)) {
-            boolean gDownload = Xml.selectNodes(operations, "guestoperations/record[operationid="+AccessManager.OPER_DOWNLOAD+" and groupid='-1']").size() == 1;
-            addElement(info, Edit.Info.Elem.GUEST_DOWNLOAD, gDownload+"");
-        }
 
     }
 

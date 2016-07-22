@@ -252,10 +252,14 @@
          *
          * @param {string} params to send to the batch process
          * @param {string} popupid id of the popup to close after process.
+         * @param {string} processname name of the process to run (if undefined use onlinesrc-add)
          */
-        addOnlinesrc: function(params, popupid) {
+        addOnlinesrc: function(params, popupid, processname) {
+					if (processname == undefined) {
+						processname = 'onlinesrc-add';
+					}
           runProcess(this,
-              setParams('onlinesrc-add', params)).then(function() {
+              setParams(processname, params)).then(function() {
             closePopup(popupid);
           });
         },
@@ -393,6 +397,7 @@
             scopedName: qParams.name,
             uuidref: qParams.uuidSrv,
             uuid: qParams.uuidDS,
+            title: qParams.title,
             process: qParams.process
           }).then(function() {
             var qParams = setParams('dataset-add', params);
@@ -401,6 +406,7 @@
               scopedName: qParams.name,
               uuidref: qParams.uuidDS,
               uuid: qParams.uuidSrv,
+              title: qParams.title,
               process: qParams.process
             }).then(function() {
               closePopup(popupid);
@@ -523,7 +529,7 @@
         removeDataset: function(onlinesrc) {
           var params = {
             uuid: gnCurrentEdit.uuid,
-            uuidref: onlinesrc['geonet:info'].uuid
+            uuidref: onlinesrc.id
           };
           runProcess(this,
               setParams('datasets-remove', params));

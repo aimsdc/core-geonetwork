@@ -54,7 +54,7 @@ public class DefaultStatusActions implements StatusActions {
 	private String siteUrl;
 	private UserSession session;
 	private boolean emailNotes = true;
-	private boolean html5ui = true;
+	private static boolean html5ui = true;
 
 	private String allGroup = "1";
 
@@ -116,16 +116,21 @@ public class DefaultStatusActions implements StatusActions {
 	  * Called when a record is edited to set/reset status.
 	  *
 		* @param id The metadata id that has been edited.
-		* @param minorEdit If true then the edit was a minor edit.
+		* @param minorEdit If true then the edit was a minor edit. (The new angular editor doesn't provide this flag so it is 
+		* always false)
 		*/
 	public void onEdit(int id, boolean minorEdit) throws Exception {
 
 		if (!minorEdit && dm.getCurrentStatus(dbms, id).equals(Params.Status.APPROVED)) {
-			String changeMessage = "GeoNetwork user "+session.getUserId()+" ("+session.getUsername()+") edited metadata record "+id;
+			String changeMessage = "GeoNetwork user "+session.getUserId()+" ("+session.getUsername()+") edited approved metadata record "+id+", status will be set to DRAFT";
 			unsetAllOperations(id);
 			dm.setStatus(context, dbms, id, Integer.valueOf(Params.Status.DRAFT), new ISODate().toString(), changeMessage);
 		}
 		
+		if (!minorEdit && dm.getCurrentStatus(dbms, id).equals(Params.Status.REJECTED)) {
+			String changeMessage = "GeoNetwork user "+session.getUserId()+" ("+session.getUsername()+") edited rejected metadata record "+id+", status will be set to DRAFT";
+			dm.setStatus(context, dbms, id, Integer.valueOf(Params.Status.DRAFT), new ISODate().toString(), changeMessage);
+		}
 	}
 
 	/** 
@@ -153,7 +158,7 @@ public class DefaultStatusActions implements StatusActions {
 
 			if (status.equals(Params.Status.APPROVED)) {
 				// setAllOperations(mid); - this is a short cut that could be enabled
-			} else if (status.equals(Params.Status.DRAFT) || status.equals(Params.Status.REJECTED)) {
+			} else if (status.equals(Params.Status.DRAFT) || status.equals(Params.Status.REJECTED) || status.equals(Params.Status.RETIRED)) {
 				unsetAllOperations(mid);
 			}
 
@@ -168,8 +173,8 @@ public class DefaultStatusActions implements StatusActions {
     //--- inform owners if status is approved
     } else if (status.equals(Params.Status.APPROVED)) {
       informOwnersApprovedOrRejected(metadataIds, changeDate, changeMessage, true);
-    //--- inform owners if status is rejected
-    } else if (status.equals(Params.Status.REJECTED)) {
+    //--- inform owners if status is rejected or retired
+    } else if (status.equals(Params.Status.REJECTED) || status.equals(Params.Status.RETIRED)) {
       informOwnersApprovedOrRejected(metadataIds, changeDate, changeMessage, false);
     }	
 
@@ -220,6 +225,22 @@ public class DefaultStatusActions implements StatusActions {
 
 		//--- get content reviewers (sorted on content reviewer userid)
 		Element contentRevs = am.getContentReviewers(dbms, metadata);
+		List<Element> revList = contentRevs.getChildren();
+
+		for (Element rev : revList) {
+			// get reviewer ownergroup and set permissions so that content reviewer can review the record (may not have privs)
+			String groupowner = rev.getChildText("groupowner");
+			if (groupowner == null) {
+				context.error("Content reviewer "+rev.getChildText("userid")+" doesn't have a groupowner! - they may not be able to review the record.");	
+				continue; // skip
+			}
+			for (Integer mdId : metadata) {
+				dm.setOperation(context, dbms, mdId+"", groupowner, AccessManager.OPER_VIEW);
+				dm.setOperation(context, dbms, mdId+"", groupowner, AccessManager.OPER_DOWNLOAD);
+				dm.setOperation(context, dbms, mdId+"", groupowner, AccessManager.OPER_NOTIFY);
+				dm.setOperation(context, dbms, mdId+"", groupowner, AccessManager.OPER_EDITING);
+			}
+		}
 
 		String subject = "Metadata records SUBMITTED by "+replyTo+" ("+replyToDescr+") on "+changeDate;
 		processList(contentRevs, subject, Params.Status.SUBMITTED, changeDate, changeMessage);
@@ -313,4 +334,9 @@ public class DefaultStatusActions implements StatusActions {
 			return siteUrl+"/main.search?"+suffix;
 		}
 	}
+
+	public void setUseHtml5ui(boolean html5ui) {
+		DefaultStatusActions.html5ui = html5ui;
+	}
+        
 }

@@ -139,6 +139,7 @@ public class LuceneSearcher extends MetaSearcher {
 	private Set<String>	_tokenizedFieldSet;
 	private LuceneConfig _luceneConfig;
 	private String _boostQueryClass;
+	private String[] okStatus = { "2" }; // for filtering to show only approved records
 
 	
 	/**
@@ -564,13 +565,23 @@ public class LuceneSearcher extends MetaSearcher {
 
             @SuppressWarnings("unchecked")
             List<Element> requestedGroups = request.getChildren(SearchParameter.GROUP);
+            List<Element> requestedOwnerGroups = request.getChildren(SearchParameter.GROUPOWNER);
+
             Set<String> userGroups = gc.getAccessManager().getUserGroups(dbms, srvContext.getUserSession(), srvContext.getIpAddress(), false);
             UserSession userSession = srvContext.getUserSession();
-            // unless you are logged in as Administrator, check if you are allowed to query the groups in the query
+            // unless you are logged in as Administrator, check if you are allowed to query the groups in the query 
             if (userSession == null || userSession.getProfile() == null ||
                     ! (userSession.getProfile().equals(Geonet.Profile.ADMINISTRATOR) && userSession.isAuthenticated())) {
             	if(!CollectionUtils.isEmpty(requestedGroups)) {
                     for(Element group : requestedGroups) {
+                        if(! "".equals(group.getText()) 
+                        		&& ! userGroups.contains(group.getText())) {
+                            throw new UnAuthorizedException("You are not authorized to do this.", null);
+                        }
+                    }
+                }
+            	if(!CollectionUtils.isEmpty(requestedOwnerGroups)) {
+                    for(Element group : requestedOwnerGroups) {
                         if(! "".equals(group.getText()) 
                         		&& ! userGroups.contains(group.getText())) {
                             throw new UnAuthorizedException("You are not authorized to do this.", null);
@@ -596,7 +607,11 @@ public class LuceneSearcher extends MetaSearcher {
                 }
                 if (owner != null) {
 					request.addContent(new Element(SearchParameter.OWNER).addContent(owner));
-                }
+                } else if (request.getChild(SearchParameter._STATUS) == null) {
+									for (String status : this.okStatus) {
+					request.addContent(new Element(SearchParameter._STATUS).addContent(status));
+									}
+								}
 			    //--- in case of an admin show all results
                 if (userSession != null) {
                     if (userSession.isAuthenticated()) {

@@ -12,8 +12,8 @@
     <!-- TODO: could be nice to filter by organisation -->
     <input type="text" class="form-control"
            placeholder="{{('searchA' + templateType) | translate}}"
-           data-ng-model="subtemplateFilter.any"
-           data-ng-change="getEntries()"/>
+           data-ng-model="params.any"
+					 data-ng-change="triggerWildSubtemplateSearch($parent.params._root)"/>
 
     <!-- The autocomplete list -->
     <div class="list-group tt-dropdown-menu gn-autocomplete-list"
@@ -52,7 +52,7 @@
                 </li>
               </ul>
             </div>
-            <div data-ng-show="gnConfig[gnConfig.key.isXLinkEnabled]"
+            <div data-ng-show="gnConfig[gnConfig.key.isXLinkEnabled] && isContact"
                  title="{{'addContactAsLink-help' | translate}}"
                  class="btn-group">
               <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">

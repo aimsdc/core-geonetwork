@@ -310,7 +310,9 @@ GeoNetwork.MetadataMenu = Ext.extend(Ext.menu.Menu, {
         this.add(this.adminMenuSeparator);
         
         this.add(this.viewAction);
-        this.add(this.zoomToAction);
+				// zoomToAction is disabled for now as it most likely doesn't
+				// work with nationalmap
+        //this.add(this.zoomToAction);
         this.add(this.viewXMLAction);
         
         this.add(this.viewRDFAction);
@@ -340,7 +342,8 @@ GeoNetwork.MetadataMenu = Ext.extend(Ext.menu.Menu, {
         if (!this.record) {
             return; // TODO : improve. It happens when ViewWindow is opened without searching first.
         }
-        
+       
+			  var ownername = this.record.get('ownername');
         var isEditable = this.record.get('edit') === 'true' ? 
         					// do not allow edit on harvested records by default
         					(this.record.get('isharvested') === 'y' ? GeoNetwork.Settings.editor.editHarvested || false : true) 
@@ -351,6 +354,17 @@ GeoNetwork.MetadataMenu = Ext.extend(Ext.menu.Menu, {
             identified = this.catalogue.isIdentified() && 
                 (this.catalogue.identifiedUser && this.catalogue.identifiedUser.role !== 'RegisteredUser'),
             isReadOnly = this.catalogue.isReadOnly();
+
+				var statusValue = this.record.get('status');
+				var statusRecord = (statusValue && typeof statusValue == 'array') ? statusValue[0].value : '1';  // draft
+				var isEditorAndStatusSubmitted = this.catalogue.identifiedUser && this.catalogue.identifiedUser.role === 'Editor' && statusRecord === "4";
+
+				var isAdmin = this.catalogue.identifiedUser && this.catalogue.identifiedUser.role === 'Administrator';
+
+				var isReviewer = this.catalogue.identifiedUser && this.catalogue.identifiedUser.role == 'Reviewer' && this.record.get('edit') == 'true';
+
+				var isOwner = identified && (ownername === (this.catalogue.identifiedUser.name+" "+this.catalogue.identifiedUser.surname));
+				if (isAdmin) isOwner = true;
 
 				this.extEditorAction.hide();
 		    this.angularEditorAction.hide();
@@ -363,12 +377,12 @@ GeoNetwork.MetadataMenu = Ext.extend(Ext.menu.Menu, {
         } else {
 					if (GeoNetwork.Settings.hideExtEditor === false) {
 					  this.extEditorAction.show();
-        		this.extEditorAction.setDisabled(!isEditable || isReadOnly);
+        		this.extEditorAction.setDisabled(!isEditable || isEditorAndStatusSubmitted || isReadOnly);
 					}
 					// Display by default Angular editor
 					if (!GeoNetwork.Settings.hideAngularEditor) {
 						this.angularEditorAction.show();
-						this.angularEditorAction.setDisabled(!isEditable || isReadOnly);
+						this.angularEditorAction.setDisabled(!isEditable || isEditorAndStatusSubmitted || isReadOnly);
 					}
 					this.deleteAction.show();
         }
@@ -376,21 +390,20 @@ GeoNetwork.MetadataMenu = Ext.extend(Ext.menu.Menu, {
         this.adminMenuSeparator.setVisible(identified);
         
         /* Actions status depend on records */
-        this.adminAction.setDisabled((!isEditable && !isHarvested) || isReadOnly);
-        this.statusAction.setDisabled(!isEditable && !isHarvested);
-        this.versioningAction.setDisabled((!isEditable && !isHarvested) || isReadOnly);
-        this.categoryAction.setDisabled((!isEditable && !isHarvested) || isReadOnly);
+        this.adminAction.setDisabled((!isOwner && !isHarvested && !isReviewer) || isReadOnly);
+        this.statusAction.setDisabled((!isOwner && !isHarvested && !isReviewer) || isReadOnly);
+        this.versioningAction.setDisabled((!isOwner && !isHarvested && !isReviewer) || isReadOnly);
+        this.categoryAction.setDisabled((!isOwner && !isHarvested && !isReviewer) || isReadOnly);
 
 				// action for iso19135 records and Administrator and not read only cat 
-				var isAdmin = this.catalogue.identifiedUser && this.catalogue.identifiedUser.role === 'Administrator';
 				if (this.record.get('schema') == 'iso19135' && isAdmin && !isReadOnly) {
 					this.createThesaurusAction.show();
 			  } else {
 					this.createThesaurusAction.hide();
 				}
 
-        this.deleteAction.setDisabled((!isEditable && !isHarvested) || isReadOnly);
-        this.duplicateAction.setDisabled(!isEditable || isReadOnly);
+        this.deleteAction.setDisabled((!isOwner && !isHarvested && !isReviewer) || isReadOnly);
+        this.duplicateAction.setDisabled(isReadOnly);
         this.createChildAction.setDisabled(!isEditable || isReadOnly);
 
         if (this.ratingWidget) {

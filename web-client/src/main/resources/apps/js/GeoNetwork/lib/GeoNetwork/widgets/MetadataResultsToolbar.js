@@ -298,11 +298,13 @@ GeoNetwork.MetadataResultsToolbar = Ext.extend(Ext.Toolbar, {
             id: 'previousBt',
             text: '&lt;&lt;',
             handler: function () {
+							if (self.searchCb) {
                 var from = catalogue.startRecord - parseInt(Ext.getCmp('E_hitsperpage').getValue(), 10);
                 if (from > 0) {
                     catalogue.startRecord = from;
                     self.searchCb();
                 }
+							}
             }
         });
         
@@ -310,8 +312,10 @@ GeoNetwork.MetadataResultsToolbar = Ext.extend(Ext.Toolbar, {
             id: 'nextBt',
             text: '&gt;&gt;',
             handler: function () {
+							if (self.searchCb) {
                 catalogue.startRecord += parseInt(Ext.getCmp('E_hitsperpage').getValue(), 10);
                 self.searchCb();
+							}
             }
         });
         
@@ -369,16 +373,30 @@ GeoNetwork.MetadataResultsToolbar = Ext.extend(Ext.Toolbar, {
             scope: this,
             hidden: hide
         	});
+          this.myMetadataAction = undefined;
 				} else {
+					// For now this function doesn't add anything because we've placed a 
+					// checkbox "My metadata" at the top of the search form - this is much
+					// more useful because selections can be made on search results obtained and 
+					// actions (eg. privileges etc) carried out
+          this.myMetadataAction = new Ext.menu.Item({text: OpenLayers.i18n('myMetadata'),
+            handler: function() {
+              catalogue.myMetadata(null, true);
+            },
+            hidden: true
+          });
+
           this.createMetadataAction = new Ext.menu.Item({text: OpenLayers.i18n('newMetadata'),
             ctCls: 'gn-bt-main',
             iconCls: 'addIcon',
             handler: function() {
               catalogue.metadataEdit2(null, true);
-            }
+            },
+            hidden: hide
           });
         }
         if(!this.catalogue.isReadOnly()) {
+            if (this.myMetadataAction) this.actionMenu.addItem(this.myMetadataAction);
             this.actionMenu.addItem(this.createMetadataAction);
         }
 
@@ -623,7 +641,9 @@ GeoNetwork.MetadataResultsToolbar = Ext.extend(Ext.Toolbar, {
                         this.mdImportAction],
             adminActions = [this.ownerAction],
             actions = [this.adminAction, this.otherItem];
-        
+       
+        if (this.myMetadataAction) editingActions.push(this.myMetadataAction);
+
         Ext.each(actions, function(){
             this.setVisible(user);
         });

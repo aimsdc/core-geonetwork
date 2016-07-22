@@ -1,0 +1,79 @@
+<span data-ng-search-form="" class="input-group" style="width:100%;">
+		<!-- TODO: could be nice to filter by organisation -->
+    <input type="text" class="form-control"
+           placeholder="{{('searchA' + templateType) | translate}}"
+           data-ng-model="params.any"
+					 data-ng-change="triggerWildSubtemplateSearch($parent.params._root)"
+					 data-ng-click="triggerWildSubtemplateSearch($parent.params._root)"/>
+
+    <!-- The autocomplete list -->
+    <div class="list-group tt-dropdown-menu gn-autocomplete-list"
+        data-ng-show="searchResults.records">
+      <span class="tt-suggestions">
+        <div class="tt-suggestion"
+            data-ng-repeat="r in searchResults.records"> {{r.title}}
+          <span class="pull-right">
+            <!-- Add action for simple subtemplates -->
+            <div class="btn btn-default"
+                 data-ng-hide="isContact"
+                  data-ng-click="addEntry(r)">
+              <i class="fa fa-plus"></i>
+              <!-- TODO: Add with XLink mode -->
+            </div>
+
+            <!-- Add action for contact with predefined contact role -->
+            <div class="btn btn-default"
+                 data-ng-show="isContact && !hasDynamicVariable"
+                 data-ng-click="addEntry(r)">
+              <i class="fa fa-plus"></i>
+            </div>
+
+            <!-- Add action for contact which allows to select contact role -->
+            <div class="btn-group"
+                 data-ng-show="isContact && hasDynamicVariable"
+                 title="{{'addContactAsText-help' | translate}}">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <i class="fa fa-plus"></i><span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <li data-ng-repeat="role in roles" data-ng-hide="role['@hideInEditMode']">
+                  <a href="" data-ng-click="addEntry(r, role.code)" title="{{role.description}}">
+                    {{role.label}}
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div data-ng-show="gnConfig[gnConfig.key.isXLinkEnabled] && isContact"
+                 title="{{'addContactAsLink-help' | translate}}"
+                 class="btn-group">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <i class="fa fa-link"></i><span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <li data-ng-repeat="role in roles" data-ng-hide="role['@hideInEditMode']">
+                  <a href="" data-ng-click="addEntry(r, role.code, true)" title="{{role.description}}">
+                    {{role.label}}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </span>
+          <div class="clearfix"></div>
+        </div>
+      </span>
+    </div>
+
+    <div class="input-group-btn">
+      <button class="btn btn-default" type="button"
+              data-ng-show="searchResults.records.length != 0"
+              data-ng-click="searchResults.records = []">
+        <i class="fa fa-times"></i>
+        <span>&nbsp;</span>
+      </button>
+    </div>
+
+    <!-- The contact to insert once received -->
+    <div data-ng-if="snippet">
+      <input name="{{snippetRef}}" type="hidden" value="{{snippet}}"/>
+    </div>
+</span>

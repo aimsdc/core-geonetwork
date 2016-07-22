@@ -432,6 +432,11 @@
 		<version>${project.version}</version>
 	</dependency>
 	
+  <dependency>
+    <groupId>${project.groupId}</groupId>
+    <artifactId>nationalmap</artifactId>
+		<version>${project.version}</version>
+	</dependency>
 	
 	</dependencies>
 
@@ -502,19 +507,22 @@
       <plugin> 
         <groupId>org.codehaus.mojo</groupId> 
         <artifactId>buildnumber-maven-plugin</artifactId> 
-        <version>1.0</version> 
+        <version>1.4</version> 
         <executions> 
           <execution> 
-            <phase>validate</phase> 
+            <phase>generate-resources</phase> 
             <goals> 
-              <goal>create</goal> 
+              <goal>create-metadata</goal> 
             </goals> 
           </execution> 
         </executions> 
         <configuration> 
-          <timestampFormat>{0,date,MM/dd/yyyy hh:mm:ss a}</timestampFormat> 
-          <doCheck>false</doCheck> 
-          <doUpdate>false</doUpdate> 
+					<timestampFormat>yyyy-MM-dd'T'HH:mm:ss</timestampFormat>
+					<applicationName>ANZMEST GeoNetwork</applicationName>
+					<attach>true</attach>
+					<!--make it available for jar/war classpath resource -->
+					<outputName>geonetwork.buildnumber.properties</outputName>
+					<addOutputDirectoryToResources>true</addOutputDirectoryToResources>
         </configuration> 
       </plugin>
      
@@ -528,14 +536,11 @@
 						<resource>
                 <directory>${project.basedir}/../web-client/src/main/resources</directory>
             </resource>	
+						<!--
 						<resource>
-                <directory>${project.basedir}/../nationalmap/</directory>
-              	<excludes>
-                	<exclude>target/**</exclude>
-                	<exclude>pom.xml</exclude>
-								</excludes>
-                <targetPath>apps/nationalmap</targetPath>
+                <directory>${project.basedir}/../nm/src/main/resources</directory>
             </resource>	
+						-->
 						<resource>
 						  <directory>${project.basedir}/../web-ui/src/main/resources</directory>
 						</resource>
@@ -581,6 +586,15 @@
               </includes>
             </resource>
           
+						<!-- geonetwork.buildnumber.properties into classes -->
+            <resource>
+              <directory>target/classes</directory>
+              <targetPath>WEB-INF/classes</targetPath>
+              <includes>
+                <include>geonetwork.buildnumber.properties</include>
+              </includes>
+            </resource>
+          
 						<!-- harvesting icons -->
             <resource>
               <directory>${geonetwork.webapp.dir}/images/harvesting</directory>
@@ -623,8 +637,8 @@
                 </includes>
             </resource>-->
           </webResources>
-					<!--
           <overlays>
+						<!--
             <overlay>
               <groupId>${project.groupId}</groupId>
               <artifactId>geonetwork-client</artifactId>
@@ -635,8 +649,13 @@
               <artifactId>web-ui</artifactId>
               <type>jar</type>
             </overlay>
+						-->
+            <overlay>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>nationalmap</artifactId>
+              <type>jar</type>
+            </overlay>
           </overlays>
-					-->
           <!-- <packagingExcludes>WEB-INF/data/**</packagingExcludes> -->
           <packagingExcludes>xml/schemas/**</packagingExcludes>
 <!--          <warSourceDirectory>src/main/geonetwork</warSourceDirectory> -->
@@ -715,6 +734,7 @@
 
                 WRO4J intelligently caches minified files (and automatically handles gzipping)
             -->
+<!-- Disable doesn't work with nationalmap
             <plugin>
                 <groupId>ro.isdc.wro4j</groupId>
                 <artifactId>wro4j-maven-plugin</artifactId>
@@ -729,13 +749,6 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!-- The targetGroups are the groups to test for existence.  if they are not found then
-                         an error is raised.  Currently the groups from web-ui, web-client and web are listed
-                         here.  If web-client (for example) is removed then remove the group below
-
-                         Note:  all groups must be on the same line with not whitespace.
-                    -->
-                    <targetGroups>gn,gn_admin,gn_login,lib,gn.libs,gn.libs.map,gn.libs.scriptaculous,gn,gn.search,gn.editor,gn.geo.libs,kernel,geonetwork-client-ext-ux_css,geonetwork-client_css,geonetwork-client-mini-nomap,geonetwork-client-mini,geonetwork-client-search-app,geonetwork-client-tabsearch-app,geonetwork-client-html5ui-app,closure_deps,srv_custom_style</targetGroups>
                     <minimize>true</minimize>
                     <destinationFolder>${wro4jOutput}</destinationFolder>
                     <cssDestinationFolder>${wro4jOutput}/css</cssDestinationFolder>
@@ -772,9 +785,16 @@
                         <artifactId>less4j</artifactId>
                         <version>1.2.1</version>
                     </dependency>
+                    <dependency>
+                      <groupId>${project.groupId}</groupId>
+                      <artifactId>nationalmap</artifactId>
+		                  <version>${project.version}</version>
+	                  </dependency>
+	
                 </dependencies>
 
             </plugin>
+-->
 		  <plugin>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-checkstyle-plugin</artifactId>

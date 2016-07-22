@@ -400,7 +400,7 @@
       <dependency>
         <groupId>commons-collections</groupId>
         <artifactId>commons-collections</artifactId>
-        <version>3.2.1</version>
+        <version>3.2.2</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -954,7 +954,9 @@
     <module>oaipmh</module>
     <module>sde</module>
     <module>web-client</module>
-    <module>nationalmap</module>
+		<!--
+    <module>nm</module>
+		-->
     <module>wro4j</module>
     <module>web-ui</module>
     <module>web</module>

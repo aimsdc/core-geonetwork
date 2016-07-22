@@ -73,8 +73,8 @@ MarLIN.Thesauri = [
 		multi:						true
 	},
 	{ 
-		thesaurus: 'geonetwork.thesaurus.register.discipline.urn:marlin.csiro.au:keywords:standardDataType',
-		thesaurusShortName: 'register.discipline.urn:marlin.csiro.au:keywords:standardDataType',
+		thesaurus: 'geonetwork.thesaurus.register.dataSource.urn:marlin.csiro.au:keywords:standardDataType',
+		thesaurusShortName: 'register.dataSource.urn:marlin.csiro.au:keywords:standardDataType',
 		luceneFieldName:	'E_keywordId',
 		label:						'Data Type',
 		valueField:				'uri',
@@ -344,7 +344,6 @@ MarLIN.SearchFormTools = {
         });
 
         var orgNameField = new Ext.ux.form.SuperBoxSelect({
-            hideLabel: false,
 						anchor: '95%',
             minChars: 0,
             queryParam: 'q',
@@ -359,9 +358,6 @@ MarLIN.SearchFormTools = {
             fieldLabel: OpenLayers.i18n('org')
         });
 
-				orgNameField.on('beforerender', function() {
-							orgNameStore.load();
-				});
         return orgNameField;
     },
     /** api:method[getTitleField] 
@@ -384,7 +380,6 @@ MarLIN.SearchFormTools = {
         });
 
         var titNameField = new Ext.ux.form.SuperBoxSelect({
-            hideLabel: false,
 						anchor: '95%',
             minChars: 0,
             queryParam: 'q',
@@ -399,9 +394,6 @@ MarLIN.SearchFormTools = {
             fieldLabel: OpenLayers.i18n('Title')
         });
 
-				titNameField.on('beforerender', function() {
-							titNameStore.load();
-				});
         return titNameField;
     },
     /** api:method[getCreditField] 
@@ -424,7 +416,6 @@ MarLIN.SearchFormTools = {
         });
 
         var credNameField = new Ext.ux.form.SuperBoxSelect({
-            hideLabel: false,
 						anchor: '95%',
             minChars: 0,
             queryParam: 'q',
@@ -439,9 +430,6 @@ MarLIN.SearchFormTools = {
             fieldLabel: OpenLayers.i18n('Credit')
         });
 
-				credNameField.on('beforerender', function() {
-							credNameStore.load();
-				});
         return credNameField;
     },
     /** api:method[getDataParamField] 
@@ -464,7 +452,6 @@ MarLIN.SearchFormTools = {
         });
 
         var dataParamField = new Ext.ux.form.SuperBoxSelect({
-            hideLabel: false,
 						anchor: '95%',
             minChars: 0,
             queryParam: 'q',
@@ -479,9 +466,6 @@ MarLIN.SearchFormTools = {
             fieldLabel: OpenLayers.i18n('Data Parameters')
         });
 
-				dataParamField.on('beforerender', function() {
-							dataParamStore.load();
-				});
         return dataParamField;
     },
     /** method[getThesaurusField] 
@@ -573,10 +557,6 @@ MarLIN.SearchFormTools = {
             selector = new Ext.form.ComboBox(config);
         }
 
-				selector.on('beforerender', function() {
-					keyStore.load();
-				});
-
 				return MarLIN.buildKeywordRow(services, selector, thesaurusInfo);
 		},
 		/** api:method[getFields]
@@ -591,13 +571,45 @@ MarLIN.SearchFormTools = {
 
 			MarLIN.ThesauriStore.loadData(MarLIN.Thesauri);
 
-			MarLIN.ThesaurusPanel = new Ext.Panel({
+			MarLIN.SelectorPanel = new Ext.Panel({
+				title: 'Field Selectors',
 				layout: 'form',
 				border: false,
 				anchor: '100%', // parent is a form panel
 				autoHeight: true,
-				id: 'marlin-keywords',
+				collapsed: true,
+				collapsible: true,
+				id: 'marlin-selectors',
 				items: [this.getResourceTypeField(multi), this.getTitleField(services), this.getOrganisationField(services), this.getCreditField(services), this.getDataParamField(services)]
+			});
+
+			// Don't load stores until selector panel is expanded
+			MarLIN.SelectorPanel.on('beforeexpand', function(p) {
+					Ext.each(p.items.items, function(item, index) {
+						var store = item.getStore();
+						if (store && store.url && store.load) store.load();
+					});
+			});
+
+			MarLIN.ThesaurusPanel = new Ext.Panel({
+        title:'Thesaurus Selectors',
+				layout: 'form',
+				border: false,
+				anchor: '100%', // parent is a form panel
+				autoHeight: true,
+				collapsed: true,
+				collapsible: true,
+				id: 'marlin-keywords',
+				items: []
+			});
+
+			// Don't load stores until thesaurus panel is expanded
+			MarLIN.ThesaurusPanel.on('beforeexpand', function(p) {
+					var thesaurusCombos = p.findByType('combo');
+					Ext.each(thesaurusCombos, function(combo, index) {
+						var store = combo.getStore();
+						if (store && (store.url || store.proxy.url) && store.load) store.load();
+					});
 			});
 
 			// now get all thesauri in use from Lucene index field thesaurusName
@@ -615,21 +627,23 @@ MarLIN.SearchFormTools = {
 					'load': function() { 
 									var theValues = theStore.collect('value');
 									//console.log('Loading '+theValues);
+									var hide = true;
 									Ext.each(theValues, function(item, index) {
 										var found = MarLIN.ThesauriStore.find('thesaurus',item);
 										if (found >= 0) {
 											//console.log('Adding '+item+' '+MarLIN.ThesauriStore.getAt(found));
+											hide = false;
 											MarLIN.ThesaurusPanel.add(MarLIN.SearchFormTools.getThesaurusField(MarLIN.ThesauriStore.getAt(found), services));
 										}
 									});
-									MarLIN.ThesaurusPanel.doLayout();
+									if (hide) MarLIN.ThesaurusPanel.hide();
 					},
 					scope: this 
 			});
 			theStore.load();
 
 			// push form panel into the list of form items returned
-			f.push(MarLIN.ThesaurusPanel);
+			f.push(MarLIN.SelectorPanel, MarLIN.ThesaurusPanel);
 
       return f;
     }

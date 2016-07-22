@@ -123,8 +123,8 @@ public final class Processor {
 	public static void removeFromCache(String xlinkUri) throws CacheException {
 
 		JeevesJCS xlinkCache = JeevesJCS.getInstance(XLINK_JCS);
-		if (xlinkCache.get(xlinkUri)!=null) {
-			xlinkCache.remove(xlinkUri);
+		if (xlinkCache.get(xlinkUri.toLowerCase())!=null) {
+			xlinkCache.remove(xlinkUri.toLowerCase());
 		}
 	}
 
@@ -212,11 +212,16 @@ public final class Processor {
 				Log.error(Log.XLINK_PROCESSOR,"Failed on " + uri 
 						+ " with exception message " + e.getMessage());
 			}
+
+			if (remoteFragment != null && remoteFragment.getName().equals("error")) {
+				Log.error(Log.XLINK_PROCESSOR,"Resolving xlink returned error: "+Xml.getString(remoteFragment));
+				remoteFragment = null;
+			}
 			
 			if (remoteFragment != null) {
 				xlinkCache.put(uri.toLowerCase(), remoteFragment);
                 if(Log.isDebugEnabled(Log.XLINK_PROCESSOR))
-                    Log.debug(Log.XLINK_PROCESSOR,"cache miss for "+uri);
+                    Log.debug(Log.XLINK_PROCESSOR,"cache FILL for "+uri);
 			} else {
 				return null;
 			}	
@@ -254,10 +259,12 @@ public final class Processor {
 		JeevesJCS xlinkCache = JeevesJCS.getInstance(XLINK_JCS);
 		Element theXLink = (Element)xlinkCache.get(uri.toLowerCase());
 		if (theXLink == null) {
-			Log.error(Log.XLINK_PROCESSOR,"Uri "+uri+" wasn't there");
+	    if(Log.isDebugEnabled(Log.XLINK_PROCESSOR))
+				Log.debug(Log.XLINK_PROCESSOR,"Uri "+uri+" wasn't there");
 		} else {
 			xlinkCache.remove(uri);
-			Log.error(Log.XLINK_PROCESSOR,"Uri "+uri+" was removed from cache");
+	    if(Log.isDebugEnabled(Log.XLINK_PROCESSOR))
+				Log.debug(Log.XLINK_PROCESSOR,"Uri "+uri+" was removed from cache");
 		}
 	}
 
@@ -304,17 +311,20 @@ public final class Processor {
 		// process remote xlinks, skip local xlinks for later
 		for (Attribute xlink : xlinks) {
 			String hrefUri = xlink.getValue();
-            if(Log.isDebugEnabled(Log.XLINK_PROCESSOR)) Log.debug(Log.XLINK_PROCESSOR, "will resolve href '"+hrefUri+"'");
-			String idSearch = null;
-			int hash = hrefUri.indexOf('#');
-			if (hash > 0 && hash != hrefUri.length()-1) {
-				idSearch = hrefUri.substring(hash+1);
-				hrefUri = hrefUri.substring(0, hash);
+      if(Log.isDebugEnabled(Log.XLINK_PROCESSOR)) Log.debug(Log.XLINK_PROCESSOR, "will resolve href '"+hrefUri+"'");
+      String idSearch = null;
+      int hash = hrefUri.indexOf('#');
+      // This will probably fail if a # occurs anywhere in the URL
+      // except as anchor...but such urls are too complex for what we
+      // usually get here 99% of the time... 
+			if (hash > 0 && hash != hrefUri.length()-1) { // skip local xlinks eg. xlink:href="#details"
+			  idSearch = hrefUri.substring(hrefUri.lastIndexOf('#')+1);
+			  hrefUri = hrefUri.substring(0, hash);
 			}
 
-			if (hash != 0) { // skip local xlinks eg. xlink:href="#details"
-				doXLink(hrefUri, idSearch, xlink, action, srvContext);
-			}
+      if (hash != 0) { // skip local xlinks eg. xlink:href="#details"
+			  doXLink(hrefUri, idSearch, xlink, action, srvContext);
+      }
 		}
 	}
 

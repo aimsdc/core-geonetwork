@@ -9,6 +9,7 @@ git clone https://github.com/anzmest/core-geonetwork.git -b 2.10.x --recursive
 
 To build after you have cloned:
 
+```
 cd gast
 git checkout 2.10.x
 git pull
@@ -19,29 +20,25 @@ git checkout 2.10.x
 git pull
 cd ..
 
-cd nationalmap
+cd maven_repo
 git checkout master
 git pull
 cd ..
-
-cd nationalmap/third_party/cesium
-git checkout nm
-git pull
-cd ../../..
 
 cd schemaPlugins
 git checkout 2.10.x
 git pull
 cd ..
+```
 
 With ANZMEST you get GeoNetwork (2.10.x) plus:
 
 * ISO19115/19139 ANZLIC Profile version 1.1
 * ISO19115/19139 Marine Community Profile versions 1.4 and 1.5-experimental
-* SensorML OGC Discovery Profile for sensor platform metadata
-* EML GBIF profile
 * ANZMETA (the old ANZLIC metadata profile) version 1.3 (view only - no editing)
-* ISO19115-1 2014 FDIS (for testing and exploration only)
+* ISO19115-3
+* Editor from GeoNetwork 3.x
+* Nationalmap as map browser
 
 You can view the config overrides that ANZMEST applies to GeoNetwork at:
 

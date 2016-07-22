@@ -80,6 +80,7 @@
         <property name="profileMapping">
             <map/>
         </property>
+        <property name="keepExistingUserGroups" value="${ldap.privilege.keep.existing.usergroups}"/>
         <property name="importPrivilegesFromLdap" value="${ldap.privilege.import}"/>
         <property name="createNonExistingLdapGroup" value="${ldap.privilege.create.nonexisting.groups}" />
         <property name="contextSource" ref="contextSource" />
@@ -98,7 +99,8 @@
         <property name="profileMapping">
             <map/>
 			</property>
-			<property name="importPrivilegesFromLdap" value="${ldap.privilege.import}"/>
+        <property name="keepExistingUserGroups" value="${ldap.privilege.keep.existing.usergroups}"/>
+        <property name="importPrivilegesFromLdap" value="${ldap.privilege.import}"/>
         <property name="createNonExistingLdapGroup" value="${ldap.privilege.create.nonexisting.groups}" />
 
         <property name="privilegePattern" value="${ldap.privilege.pattern}" />
@@ -121,6 +123,7 @@
         <property name="profileMapping">
             <map/>
         </property>
+        <property name="keepExistingUserGroups" value="${ldap.privilege.keep.existing.usergroups}"/>
         <property name="importPrivilegesFromLdap" value="${ldap.privilege.import}"/>
         <property name="createNonExistingLdapGroup" value="${ldap.privilege.create.nonexisting.groups}"/>
 

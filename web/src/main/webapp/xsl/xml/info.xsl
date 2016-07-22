@@ -59,7 +59,7 @@
 				"related":
 				{
 					"display":true,
-					"categories":[]
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
 				},
 				"suggestion":
 				{
@@ -87,7 +87,7 @@
 				"related":
 				{
 					"display":true,
-					"categories":[]
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
 				},
 				"suggestion":
 				{
@@ -105,7 +105,7 @@
 				"related":
 				{
 					"display":true,
-					"categories":[]
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
 				},
 				"suggestion":
 				{
@@ -123,7 +123,7 @@
 				"related":
 				{
 					"display":true,
-					"categories":[]
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
 				},
 				"suggestion":
 				{
@@ -141,7 +141,7 @@
 				"related":
 				{
 					"display":true,
-					"categories":[]
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
 				},
 				"suggestion":
 				{
@@ -159,6 +159,43 @@
 				"related":
 				{
 					"display":true,
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
+				},
+				"suggestion":
+				{
+					"display":false
+				},
+				"validation":
+				{
+					"display":true
+				}
+			},
+			"iso19115-2":
+			{
+				"defaultTab":"default",
+				"displayToolTip":false,
+				"related":
+				{
+					"display":true,
+					"categories":["thumbnail","service","onlinesrc","parent","sibling"]
+				},
+				"suggestion":
+				{
+					"display":false
+				},
+				"validation":
+				{
+					"display":true
+				}
+			},
+			"prov-xml":
+			{
+				"defaultTab":"default",
+				"displayToolTip":true,
+				"displayAttribute":true,
+				"related":
+				{
+					"display":false,
 					"categories":[]
 				},
 				"suggestion":

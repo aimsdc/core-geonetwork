@@ -206,6 +206,12 @@ GeoNetwork.Catalogue = Ext.extend(Ext.util.Observable, {
     identifiedUser: undefined,
     
     metadataEditFn: undefined,
+
+    /** api: property[metadataEditFnCallback]
+     *  ``Function`` Callback to be executed when editing (see metadataEdit2).
+     */
+    metadataEditFnCallback: undefined,
+
     /** api: config[adminAppUrl]
      *  ``String`` URL to the administration interface
      *  TODO : should we go to admin service by default ?
@@ -376,6 +382,9 @@ GeoNetwork.Catalogue = Ext.extend(Ext.util.Observable, {
             getImportXSL: serviceUrl + 'get.conversions.xsl',
             proxy: this.URL + '/proxy'
         };
+
+				// wipe out any caching of whether the catalogue is readOnly
+				localStorage.removeItem(this.services.readOnly);
         
         // TODO : init only once required (ie. metadata show)
         this.extentMap = new GeoNetwork.map.ExtentMap();
@@ -420,6 +429,13 @@ GeoNetwork.Catalogue = Ext.extend(Ext.util.Observable, {
      *  Return true if GN is is read-only mode
      */
     isReadOnly: function(){
+				// check cache first
+				var cached = localStorage.getItem(this.services.readOnly);
+				if (cached) { 
+					return cached === "true";
+				}
+
+				// request from server
         var request = OpenLayers.Request.GET({
             url: this.services.readOnly,
             async: false
@@ -430,6 +446,8 @@ GeoNetwork.Catalogue = Ext.extend(Ext.util.Observable, {
             ro = xml.getElementsByTagName('readonly')[0];
             if(ro) {
                 result = ro.childNodes[0].nodeValue === "true";
+								// cache result
+								localStorage.setItem(this.services.readOnly, ro.childNodes[0].nodeValue);
             }
         }
         return result;
@@ -1018,7 +1036,12 @@ GeoNetwork.Catalogue = Ext.extend(Ext.util.Observable, {
           url += 'metadata/' + id;
         }
         window.open(url, '_blank');
+				if (this.metadataEditFnCallback) this.metadataEditFnCallback();
       }
+    },
+    myMetadata: function(){
+      var url = 'catalog.edit';
+      window.open(url, '_blank');
     },
     /** api: method[metadataDuplicate]
      *  :param uuid: ``String`` Uuid of the metadata to duplicate
