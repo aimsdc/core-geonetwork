@@ -285,7 +285,7 @@ public class LDAPSynchronizerJob extends QuartzJobBean {
                                 userDetails.setProfile(((profile != null) ? profile : Geonet.Profile.REGISTERED_USER));
                                 Log.debug(Geonet.LDAP, "  - To Update Mapped User Details - " + userDetails.toString());
                                 // got some details, should be able to update user
-                                LDAPUtils.saveUser(userDetails, dbms, serialFactory, false, false);
+                                LDAPUtils.saveUser(userDetails, dbms, serialFactory, false, false, false);
                                 Log.info(Geonet.LDAP, "  - Updated LDAP user " + attributeValue + " in local database.");
                             } catch (Exception e1) {
                                 Log.error(Geonet.LDAP, "Exception updating user " + attributeValue + " - " + e1.getMessage());
